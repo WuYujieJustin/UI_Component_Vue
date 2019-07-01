@@ -1,6 +1,6 @@
 <template>
     <div class="textInput">
-        <label for="textInput">{{textContent}}</label>
+        <label for="textInput">{{label}}</label>
         <input type="textInput">
     </div>
 </template>
@@ -9,12 +9,13 @@
 export default {
     data(){
         return{
-            textContent:''
+            // label:''
         }
     },
     props:{
-        textContent:{
+        label:{
             type:String,
+            value:''
         }
     }
 }

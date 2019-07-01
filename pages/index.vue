@@ -1,17 +1,17 @@
 <template>
   <div class="container">
-    <text-input textContent="文本控件"></text-input>
+    <number-input label="数字控件" class="red"></number-input>
   </div>
 </template>
 
 <script>
 import Logo from '~/components/Logo.vue'
 import textInput from '~/components/textInput.vue'
-
+import numberInput from '~/components/numberInput.vue'
 export default {
   components: {
     Logo,
-    textInput
+    numberInput
   }
 }
 </script>
