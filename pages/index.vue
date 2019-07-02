@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <number-input label="数字控件" class="red"></number-input>
+    <number-input class="red"></number-input>
   </div>
 </template>
 

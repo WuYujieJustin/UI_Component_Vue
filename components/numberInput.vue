@@ -19,7 +19,7 @@ export default {
         //label 内容
         label:{
             type:String,
-            value:''
+            value:'文本控件'
         },
         // label 颜色
         color:{
@@ -42,7 +42,7 @@ export default {
     },
     methods:{
         handlechange(e){
-            console.log(e.target.value)
+            console.log(this.label)
         },
         handlekeyup(e){
             return this.num.toString().replace(/(\d)(?=(?:\d{3})+$)/g, '$1,')
