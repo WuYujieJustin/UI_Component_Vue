@@ -1,4 +1,4 @@
-<template>
+=<template>
   <div class="IInputnumber">
     <div>
       <label for="IInputnumber" :style="{color:`${color}`}">{{label}}</label>
@@ -9,7 +9,9 @@
         :placeholder="placeholder"
         :readonly="readonly"
         :suffixIcon="suffixIcon"
+        :isFormat="isFormat"
         v-on="inputListeners"
+        :precision="precision"
       />
     </div>
   </div>
@@ -174,9 +176,7 @@ export default {
       default: "black"
     },
     //小数位
-    precision: {
-      type: Number
-    },
+
     //是否有千分位
     isFormat: {
       type: Boolean,
@@ -200,18 +200,17 @@ export default {
     //精度
     precision: {
       type: Number,
-      validator(val) {
-        return val >= 0 && val === parseInt(val, 10);
-      },
       default: 2
     }
   },
   mounted() {
     this.tempvalue = this.value;
-    (this.formatter = new NumeralFormatter(null, 0, 5))
+    const groupStyle = this.isFormat ? NumeralFormatter.groupStyle.thousand : NumeralFormatter.groupStyle.none
+    this.formatter = new NumeralFormatter(null, 0, Number(this.precision), groupStyle)
     //直接改变输入框内的值会改变光标的位置
-    this.$refs.inputcompon.value = this.value.toString()
-      .replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+    if(this.value!=null) {
+      this.$refs.inputcompon.value = this.formatter.format(this.value.toString())
+    }
   },
   computed: {
     inputListeners: function() {
@@ -224,9 +223,13 @@ export default {
         // 然后我们添加自定义监听器，
         // 或覆写一些监听器的行为
         {
-          keyup(e){
+
+          keydown(e) {
+            console.log("keydown?")
             vm.backspacePressed = e.keyCode === 8
-            vm.isMoveCursor = false
+            vm.oldstr = vm.$refs.inputcompon.value;
+            let position = vm.$refs.inputcompon.selectionStart
+                       vm.isMoveCursor = false
              if (
               vm.$refs.inputcompon.value[
                 vm.$refs.inputcompon.selectionStart-1
@@ -236,13 +239,9 @@ export default {
               console.log("move cursor")
             }
           },
-          keydown(e) {
-            vm.backspacePressed = e.keyCode === 8
-            vm.oldstr = vm.$refs.inputcompon.value;
-            let position = vm.$refs.inputcompon.selectionStart
-          },
           // 这里确保组件配合 `v-model` 的工作
           input: function(event) {
+            console.log("input")
             let input = vm.$refs.inputcompon;
             let rawStr = input.value;
             if (rawStr === "") {
@@ -255,13 +254,8 @@ export default {
               num = vm.tempvalue;
             }
             vm.tempvalue = num;
-
             let str = vm.formatter.format(rawStr);
-            // .replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-            // if(rawStr[rawStr.length-1] === '.') {
-            //   return
-            // }
-            if (str !== rawStr) {
+            if (str != undefined && str !== rawStr) {
               let start = input.selectionStart;
               let end = input.selectionEnd;
               let rightStart = rawStr.length - start;
@@ -276,7 +270,7 @@ export default {
                   newStart = start;
                   newEnd = end;
                 }
-
+                console.log('rawStr', rawStr, start, rawStr[start], rawStr[start-1])
                 if (vm.backspacePressed && vm.isMoveCursor) {
                   // backspace pressed, move cursor before ','
                   newStart--;
