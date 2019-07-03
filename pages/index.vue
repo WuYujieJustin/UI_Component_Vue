@@ -1,6 +1,7 @@
 <template>
   <div class="container">
     <number-input class="red"></number-input>
+    <i-input-number/>
   </div>
 </template>
 
@@ -8,10 +9,12 @@
 import Logo from '~/components/Logo.vue'
 import textInput from '~/components/textInput.vue'
 import numberInput from '~/components/numberInput.vue'
+import IInputNumber from '~/components/IInputNumber.vue'
 export default {
   components: {
     Logo,
-    numberInput
+    numberInput,
+    IInputNumber
   }
 }
 </script>

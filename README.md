@@ -21,7 +21,6 @@ $ npm run generate
 
 For detailed explanation on how things work, checkout [Nuxt.js docs](https://nuxtjs.org).
 
-
 # 命名规范
 
 #### 驼峰式命名 IIInputText, 调用时 i-input-text, 根据项目需求命名如下控件(i—>ifans)
@@ -74,7 +73,7 @@ For detailed explanation on how things work, checkout [Nuxt.js docs](https://nux
 
 #### 数字控件 `<IInputNumber>`
 
-1. 可选属性 point
+1. 可选属性 suffix-icon isFormat precision
 2. isFormat(Boolean)为是否使用千分位占位符
 3. precision(Number)为保留几位小数
 4. suffix-icon(String)为自定义图标	可选值为货币单位
