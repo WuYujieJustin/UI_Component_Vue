@@ -1,8 +1,8 @@
-=<template>
+<template>
   <div class="IInputnumber">
     <div>
       <label for="IInputnumber" :style="{color:`${color}`}">{{label}}</label>
-      <input type="button" disabled v-if="suffixIcon" :value="`${unit}`" />
+      <label type="button" disabled v-if="suffixIcon" :value="`${unit}`"></label>
       <input
         ref="inputcompon"
         type="text"
@@ -10,6 +10,7 @@
         :readonly="readonly"
         :suffixIcon="suffixIcon"
         :isFormat="isFormat"
+        :value="displayText"
         v-on="inputListeners"
         :precision="precision"
       />
@@ -213,19 +214,21 @@ export default {
     }
   },
   computed: {
+    displayText(){
+      return this.value
+    },
     inputListeners: function() {
       var vm = this;
       // `Object.assign` 将所有的对象合并为一个新对象
       return Object.assign(
         {},
-        // 我们从父级添加所有的监听器
+        // 从父级添加所有的监听器
         this.$listeners,
         // 然后我们添加自定义监听器，
         // 或覆写一些监听器的行为
         {
 
           keydown(e) {
-            console.log("keydown?")
             vm.backspacePressed = e.keyCode === 8
             vm.oldstr = vm.$refs.inputcompon.value;
             let position = vm.$refs.inputcompon.selectionStart
@@ -236,12 +239,10 @@ export default {
               ] === ","
             ) {
               vm.isMoveCursor = true
-              console.log("move cursor")
             }
           },
           // 这里确保组件配合 `v-model` 的工作
           input: function(event) {
-            console.log("input")
             let input = vm.$refs.inputcompon;
             let rawStr = input.value;
             if (rawStr === "") {
@@ -270,7 +271,6 @@ export default {
                   newStart = start;
                   newEnd = end;
                 }
-                console.log('rawStr', rawStr, start, rawStr[start], rawStr[start-1])
                 if (vm.backspacePressed && vm.isMoveCursor) {
                   // backspace pressed, move cursor before ','
                   newStart--;
@@ -299,6 +299,7 @@ export default {
 <style scoped>
 input {
   float: right;
+  width: 150px;
 }
 </style>
 
