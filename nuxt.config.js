@@ -23,6 +23,7 @@ export default {
   ** Global CSS
   */
   css: [
+    'assets/main.less'    
   ],
   /*
   ** Plugins to load before mounting the App
@@ -44,6 +45,21 @@ export default {
     ** You can extend webpack config here
     */
     extend(config, ctx) {
+      const sassResourcesLoader = {
+        loader: 'sass-resources-loader',
+        options: {
+          resources: ['assets/style/theme.less', 'assets/style/mixins.less']
+        }
+      }
+      config.module.rules.forEach(rule => {
+        if (rule.test.toString() === '/\\.vue$/') {
+          rule.options.loaders.less.push(sassResourcesLoader)
+        }
+        if (rule.test.toString() === '/\\.less$/') {
+          rule.use.push(sassResourcesLoader)
+        }
+      })
     }
   }
 }
+
