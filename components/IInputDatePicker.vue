@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button type="button" @click="prevYear"> &lt;&lt; </button>
+    <button type="button" @click="prevYear">&lt;&lt;</button>
     <button type="button" @click="prevMonth" v-show="currentView === 'date'">&lt;</button>
     {{ yearLabel }}
     {{`${ month + 1 }`}}
@@ -8,7 +8,7 @@
       type="button"
       @click="nextMonth"
       v-show="currentView === 'date'"
-    > &gt; </button>
+    >&gt;</button>
     <button type="button" @click="nextYear">&gt;&gt;</button>
 
     <table
@@ -22,7 +22,7 @@
       <tbody>
         <tr>
           <th v-if="showWeekNumber">{{ 'zhou' }}</th>
-          <th v-for="(week, key) in WEEKS" :key="key">{{week }}</th>
+          <th v-for="(week, key) in WEEKS" :key="key">{{week}}</th>
         </tr>
         <tr
           class="el-date-table__row"
@@ -30,10 +30,13 @@
           :class="{ current: isWeekActive(row[1]) }"
           :key="key"
         >
-          <td v-for="(cell, key) in row" :class="getCellClasses(cell)" :key="key">
-            <div>
-              <span @click="chooseDate">{{ cell.text }}</span>
-            </div>
+          <td
+            v-for="(cell, key) in row"
+            :class="getCellClasses(cell)"
+            :key="key"
+            @click="chooseDate"
+          >
+            <span>{{ cell.text }}</span>
           </td>
         </tr>
       </tbody>
@@ -60,7 +63,7 @@ import {
   arrayFind,
   coerceTruthyValueToArray
 } from "~/utils/date-util";
-const WEEKS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const WEEKS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 const getDateTimestamp = function(time) {
   if (typeof time === "number" || typeof time === "string") {
     return _clearTime(new Date(time)).getTime();
@@ -72,17 +75,26 @@ const getDateTimestamp = function(time) {
 };
 export default {
   methods: {
-    chooseDate(e){
+    chooseDate(event) {
       //date
-      console.log(Number(e.toElement.innerText))
+
       //year
-      console.log(this.year)
-      //month
-      console.log(this.month)
-      this.isHour = true
-      console.log(this.isHour)
+      // console.log("year", this.year);
+      //month index 0 use this.month++
+      // console.log("month", this.month++);
+      // emit year month and date
+      this.rightMonth = this.month + 1;
+      let timeStr =
+        this.year +
+        "-" +
+        this.rightMonth +
+        "-" +
+        Number(event.target.innerText);
+      // add timeStr to event Object
+      event.target.timeStr = timeStr;
+      this.isHour = true;
       // inform parent component chooseDate fired
-      this.$emit('chooseDate')
+      this.$emit("chooseDate", event);
     },
     prevMonth() {
       this.date = prevMonth(this.date);
@@ -343,12 +355,13 @@ export default {
   },
   data() {
     return {
-      isHour:false,
+      isHour: false,
       tableRows: [[], [], [], [], [], []],
       lastRow: null,
       lastColumn: null,
       currentView: "date",
-      propDate: this.date
+      propDate: this.date,
+      rightMonth: this.month
     };
   },
   computed: {
@@ -388,8 +401,12 @@ export default {
       return this.date.getFullYear();
     },
 
-    month() {
-      return this.date.getMonth();
+    month: {
+      get() {
+        return this.date.getMonth();
+      },
+      // by default getter only
+      set() {}
     },
 
     startDate() {
@@ -515,12 +532,18 @@ export default {
 </script>
 
 <style lang="less" scoped>
-td:hover{
+.available:hover {
   color: aliceblue;
   background: lightblue;
 }
-td{
+.available {
   cursor: pointer;
+}
+.prev-month {
+  background: darkgray;
+}
+.next-month {
+  background: darkgray;
 }
 </style>
 

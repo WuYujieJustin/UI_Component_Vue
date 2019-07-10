@@ -13,14 +13,6 @@ export default {
         return [];
       }
     },
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    isHour: {
-      type: Boolean,
-      default: false
-    },
     isMin: {
       type: Boolean,
       default: false

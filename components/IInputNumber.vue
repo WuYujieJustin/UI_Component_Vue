@@ -160,7 +160,7 @@ NumeralFormatter.prototype = {
 export default {
   props: {
     // set for v-model
-    value: {},
+    value: '',
     // 单位
     unit: {
       type: String,

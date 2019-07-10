@@ -21,6 +21,7 @@ export default {
     showMin(event){
         // emit argument event
         this.$emit("showMin",event)
+        console.log(event.target.innerText)
     }
   },
   data() {
@@ -29,10 +30,7 @@ export default {
     };
   },
   props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
+
     isHour: {
       type: Boolean,
       default: false
