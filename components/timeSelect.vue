@@ -1,14 +1,14 @@
 <template>
-  <div class="i-input-number">
-    <input :value="pickerValue" v-on="inputListeners" @click="showTime" />
+  <div class="datePanel">
+    <input :value="pickerValue" v-on="inputListeners" @click="showTime" @input="changeInput" />
 
     <!-- year -->
-    <year-table v-if="datetype == `year`" v-show="visible && isYear" @chooseYear="confirm" />
+    <year-table v-if="datetype == `year`" v-show="isYear" @chooseYear="confirm" />
 
     <!-- month -->
     <div v-if="datetype == `month`">
-      <year-table v-show="visible && isYear" @chooseYear="confirm"/>
-      <month-table v-show="visible && isMonth" @chooseMonth="confirm" />
+      <year-table v-show="isYear" @chooseYear="confirm" />
+      <month-table v-show="isMonth" @chooseMonth="confirm" />
     </div>
 
     <!-- date -->
@@ -16,17 +16,17 @@
 
     <!-- time -->
     <div v-if="datetype == `time`">
-      <hour />
-      <minute />
+      <hour :hours="hours" @showMin="showMin" v-show="isHour" />
+      <minute :minutes="minutes" @confirm="confirm" v-show="isMin" />
     </div>
 
-    <!-- year month datepicker -->
+    <!-- datetime -->
     <div class="poper" v-if="datetype == `datetime`">
       <i-input-date-picker v-show="visible" @chooseDate="showHour" />
       <!-- hour -->
-      <hour :isHour="isHour" :hours="hours" @showMin="showMin" />
+      <hour :hours="hours" @showMin="showMin" v-show="isHour" />
       <!-- minute -->
-      <minute :minutes="minutes" :isMin="isMin" @confirm="confirm" />
+      <minute :minutes="minutes" :isMin="isMin" @confirm="confirm" v-show="isMin" />
       <today v-show="btnvisible" @chooseToday="chooseToday" />
     </div>
   </div>
@@ -44,13 +44,13 @@ import monthTable from "~/components/monthTable";
 // 月(M)、日(d)、小时(h)、分(m)、秒(s)、季度(q) 可以用 1-2 个占位符，
 // 年(y)可以用 1-4 个占位符，毫秒(S)只能用 1 个占位符(是 1-3 位的数字)
 // 例子：
-// (new Date()).Format("yyyy-MM-dd hh:mm:ss.S") ==> 2006-07-02 08:09:04.423
+// (new Date()).Format("yyyy-MM-dd HH:mm:ss.S") ==> 2006-07-02 08:09:04.423
 // (new Date()).Format("yyyy-M-d h:m:s.S")      ==> 2006-7-2 8:9:4.18
 Date.prototype.Format = function(fmt) {
   var o = {
     "M+": this.getMonth() + 1, //月份
     "d+": this.getDate(), //日
-    "H+": this.getHours(), //小时
+    "H+": this.getHours(), //小时 H 大写
     "m+": this.getMinutes(), //分
     "s+": this.getSeconds(), //秒
     "q+": Math.floor((this.getMonth() + 3) / 3), //季度
@@ -93,60 +93,118 @@ export default {
           // 这里确保组件配合 `v-model` 的工作
           input: function(event) {
             vm.$emit("input", event.target.value);
+          },
+          onchange: function(event) {
+            vm.$emit("onchang", event.target.value);
           }
         }
       );
     }
   },
   methods: {
+    // when user type this.pickerValue follows
+    changeInput(e) {
+      this.pickerValue = e.target.value;
+    },
     chooseToday() {
-      this.visible = this.isHour = this.isMin = this.btnvisible = false;
-      this.pickerValue = new Date().Format(this.format);
+      // set all tabs false
+      if (this.datetype == "datetime") {
+        this.visible = this.isHour = this.isMin = this.btnvisible = false;
+        this.pickerValue = new Date().Format(this.format);
+      }
+      if (this.datetype == "date") {
+        this.pickerValue = new Date().Format(this.format).split(" ")[0];
+      }
     },
     confirm(event) {
-      if (this.datetype == "datetime" || "month" || "year") {
-        // controls the order of year and month
-        if(this.isYear){
-          console.log("year",this.isYear)
-          this.isYear = false
-          this.isMonth = true
-        }else{
-          this.isYear =  this.isMonth = false
-        }
-        if(!this.visible){
-          this.isYear = this.isMonth = false
-        }
-        // if final step done clear all content
-        if(this.datetype == "month" && this.pickerValue && this.pickerValue.length >5){
-          this.pickerValue = this.tempValue = ''
-        }
-        if(this.datetype == "year" && this.pickerValue){
-          this.pickerValue = this.tempValue = ''
-        }
-        // assign value to input
-        this.tempValue = this.tempValue + " " + event.target.innerText;
-        this.pickerValue = this.tempValue;
-        console.log("tempValue",this.tempValue)
-        this.isHour = this.isMin = this.btnvisible = false;
-      } else {
-        this.pickerValue = event.target.innerText;
+      var eventValue = event.target.innerText;
+      if (this.datetype == "year") {
+        this.isYear = false;
+        this.pickerValue = eventValue;
       }
-      if(this.datetype == "date"){
+
+      if (this.datetype == "month" && this.isYear) {
+        // year layer
+        this.isYear = false;
+        this.isMonth = true;
+        console.log("thisthis", eventValue);
+        this.pickerValue = eventValue;
+      } else if (this.datetype == "month") {
+        // month layer use else if to aviod datetype does not match month
+        this.isYear = this.isMonth = false;
+        this.pickerValue += eventValue;
+        this.pickerValue = new Date(
+          //year
+          this.pickerValue.substring(0, 4),
+          // month
+          this.pickerValue.substring(4, this.pickerValue.length) - 1
+        )
+          .Format(this.format)
+          .substring(0, 7);
+        // only slice year and month
+      }
+
+      if (this.datetype == "date") {
         this.pickerValue = event.target.timeStr;
-        this.visible = false;
+        this.pickerValue = new Date(
+          //year
+          this.pickerValue.split("-")[0],
+          //month
+          this.pickerValue.split("-")[1] - 1,
+          //day
+          this.pickerValue.split("-")[2]
+        )
+          .Format(this.format)
+          .substring(0, 10);
+        // only slice year month date
+      }
+      if (this.datetype == "datetime") {
+        this.pickerValue = this.tempValue + "-" + eventValue;
+        console.log(this.pickerValue);
+        let yearArray = this.pickerValue.split("-");
+        let hourArray = this.pickerValue.split("-")[3].split(":");
+        yearArray.pop();
+        let fullArray = yearArray.concat(hourArray);
+        this.pickerValue = new Date(
+          // year
+          fullArray[0],
+          //month index 0 month 1
+          fullArray[1] - 1,
+          //day
+          fullArray[2],
+          //hour
+          fullArray[3],
+          //min
+          fullArray[4]
+        ).Format(this.format);
+        // to make v-model work
+        this.$emit("input",this.pickerValue)
+        this.isMin = this.btnvisible = this.visible = this.isHour = false;
+      }
+      if (this.datetype == "time") {
+        this.pickerValue = eventValue;
+        this.isHour = this.isMin = false;
       }
     },
     showHour(event) {
-      if (this.isHour) {
-        // if isHour false all related will be set false
-        this.visible = this.isHour = this.isMin = false;
-      } else {
-        this.visible = false;
-        this.isHour = true;
+      // if (this.isHour) {
+      //   // if isHour false all related will be set false
+      //   this.visible = this.isHour = this.isMin = false;
+      // } else {
+      //   this.visible = false;
+      //   this.isHour = true;
+      // }
+      if (this.datetype == "datetime") {
+        console.log("???????????");
+        if (this.visible) {
+          this.visible = false;
+          this.isHour = true;
+        }
       }
       // receive value from child
-      this.tempValue = event.target.timeStr
-      console.log(this.tempValue)
+      this.tempValue = event.target.timeStr;
+      console.log(this.pickerValue);
+      console.log(this.tempValue);
     },
     showMin(event) {
       //format minutes
@@ -161,15 +219,14 @@ export default {
         }
       }
       // show or hide some pages
-      if (this.isMin) {
-        this.visible = this.isHour = this.isMin = false;
-      } else {
-        this.isMin = true;
+      if (this.datetype == "datetime") {
+        this.isMin = this.btnvisible = true;
         this.isHour = this.visible = false;
       }
-      // this.tempValue = this.tempValue+' '+ event.target.innerText
-      // // console.log(event.target.innerText)
-      // console.log(this.tempValue)
+      if (this.datetype == "time") {
+        this.isHour = false;
+        this.isMin = true;
+      }
     },
     showTime() {
       if (this.datetype == "datetime") {
@@ -179,13 +236,39 @@ export default {
         for (let i = 0; i <= 23; i = i + this.hourRange) {
           this.hours.push(i + ":00");
         }
+        if (!this.visible) {
+          this.visible = this.btnvisible = true;
+          this.isHour = this.isMin = false;
+        } else {
+          this.visible = this.isHour = this.isMin = this.btnvisible = false;
+        }
       }
-      if (this.visible) {
-        // if isHour false all related will be set false
-        this.visible = this.isHour = this.isMin = this.btnvisible = false;
-      } else {
-        this.btnvisible = this.visible = this.isYear = true;
-        this.isHour = this.isMin = false;
+
+      // only one layer use boolean type
+      if (this.datetype == "year" || this.datetype == "date") {
+        this.isYear = !this.isYear;
+        this.visible = !this.visible;
+      }
+      // showtime 只负责第一层逻辑  一层一层往下
+      if (this.datetype == "month") {
+        if (this.isYear) {
+          this.isYear = false;
+          this.isMonth = false;
+        } else {
+          this.isYear = true;
+          this.isMonth = false;
+        }
+      }
+
+      if (this.datetype == "time") {
+        // clear time before show
+        this.hours = [];
+        // format hours
+        for (let i = 0; i <= 23; i = i + this.hourRange) {
+          this.hours.push(i + ":00");
+        }
+        this.isHour = !this.isHour;
+        this.isMin = false;
       }
     }
   },
@@ -249,6 +332,18 @@ export default {
     type: {
       type: String,
       default: "datetime"
+    },
+    step: {
+      type: Boolean,
+      default: false
+    },
+    start: {
+      type: Boolean,
+      default: false
+    },
+    end: {
+      type: Boolean,
+      default: false
     }
   }
 };
@@ -264,5 +359,8 @@ export default {
 .poper {
   width: 300px;
   height: 300px;
+}
+input {
+  cursor: pointer;
 }
 </style>
