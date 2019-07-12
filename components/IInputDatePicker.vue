@@ -1,20 +1,22 @@
 <template>
   <div>
-    <button type="button" @click="prevYear">&lt;&lt;</button>
-    <button type="button" @click="prevMonth" v-show="currentView === 'date'">&lt;</button>
-    {{ yearLabel }}
-    {{`${ month + 1 }`}}
-    <button
-      type="button"
-      @click="nextMonth"
-      v-show="currentView === 'date'"
-    >&gt;</button>
-    <button type="button" @click="nextYear">&gt;&gt;</button>
-
+    <div class="controlPanel">
+      <div>
+        <button type="button" @click="prevYear">&lt;&lt;</button>
+        <button type="button" @click="prevMonth" v-show="currentView === 'date'">&lt;</button>
+      </div>
+      <div class="yearmonth">
+        <p @click="popYear">{{ yearLabel }}</p>
+        <p @click="popMonth">{{`${ month + 1 }`}}月</p>
+      </div>
+      <div>
+        <button type="button" @click="nextMonth" v-show="currentView === 'date'">&gt;</button>
+        <button type="button" @click="nextYear">&gt;&gt;</button>
+      </div>
+    </div>
+    <year-table v-show="yearVisible" @chooseYear="closeYear" />
+    <month-table v-show="monthVisible" @chooseMonth="closeMonth" />
     <table
-      cellspacing="0"
-      cellpadding="10"
-      class="el-date-table"
       @click="handleClick"
       @mousemove="handleMouseMove"
       :class="{ 'is-week-mode': selectionMode === 'week' }"
@@ -24,17 +26,12 @@
           <th v-if="showWeekNumber">{{ 'zhou' }}</th>
           <th v-for="(week, key) in WEEKS" :key="key">{{week}}</th>
         </tr>
-        <tr
-          class="el-date-table__row"
-          v-for="(row, key) in rows"
-          :class="{ current: isWeekActive(row[1]) }"
-          :key="key"
-        >
+        <tr v-for="(row, key) in rows" :class="{ current: isWeekActive(row[1]) }" :key="key">
           <td
             v-for="(cell, key) in row"
             :class="getCellClasses(cell)"
             :key="key"
-            @click="chooseDate"
+            @click="chooseDate(cell)"
           >
             <span>{{ cell.text }}</span>
           </td>
@@ -63,6 +60,9 @@ import {
   arrayFind,
   coerceTruthyValueToArray
 } from "~/utils/date-util";
+import yearTable from "~/components/yearTable";
+import monthTable from "~/components/monthTable";
+
 const WEEKS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 const getDateTimestamp = function(time) {
   if (typeof time === "number" || typeof time === "string") {
@@ -74,27 +74,67 @@ const getDateTimestamp = function(time) {
   }
 };
 export default {
+  components: {
+    yearTable,
+    monthTable
+  },
   methods: {
-    chooseDate(event) {
-      //date
+    popYear(event) {
+      this.yearVisible = !this.yearVisible;
+    },
+    popMonth() {
+      this.monthVisible = !this.monthVisible;
+    },
+    closeMonth() {
+      let times = Number(event.target.innerText) - (this.month + 1);
+      console.log("this.month", this.month);
+      console.log(times);
+      if (times > 0) {
+        for (let k = 0; k < times; k++) {
+          this.date = nextMonth(this.date);
+        }
+      } else {
+        for (let k = 0; k < -times; k++) {
+          this.date = prevMonth(this.date);
+        }
+      }
+      this.monthVisible = false;
+    },
+    closeYear(event) {
+      // change this.date to change year
 
-      //year
-      // console.log("year", this.year);
-      //month index 0 use this.month++
-      // console.log("month", this.month++);
-      // emit year month and date
+      let times = Number(event.target.innerText) - this.year;
+      console.log(times);
+      if (times > 0) {
+        for (let i = 0; i < times; i++) {
+          this.date = nextYear(this.date);
+        }
+      } else {
+        for (let j = 0; j < -times; j++) {
+          this.date = prevYear(this.date);
+        }
+      }
+      this.yearVisible = false;
+    },
+    chooseDate(cell) {
+      if (cell.type == "prev-month") {
+        this.date = prevMonth(this.date);
+      }
+      if (cell.type == "next-month") {
+        this.date = nextMonth(this.date);
+      }
+
       this.rightMonth = this.month + 1;
-      let timeStr =
-        this.year +
-        "-" +
-        this.rightMonth +
-        "-" +
-        Number(event.target.innerText);
+      let timeStr = this.year + "-" + this.rightMonth + "-" + Number(cell.text);
       // add timeStr to event Object
-      event.target.timeStr = timeStr;
+      event.target.timeStr = timeStr
+      
+      console.log(timeStr)
       this.isHour = true;
       // inform parent component chooseDate fired
+        
       this.$emit("chooseDate", event);
+      
     },
     prevMonth() {
       this.date = prevMonth(this.date);
@@ -361,7 +401,9 @@ export default {
       lastColumn: null,
       currentView: "date",
       propDate: this.date,
-      rightMonth: this.month
+      rightMonth: this.month,
+      yearVisible: false,
+      monthVisible: false
     };
   },
   computed: {
@@ -384,7 +426,7 @@ export default {
         }
         return startYear + " - " + (startYear + 9);
       }
-      return this.year + " " + yearTranslation;
+      return this.year + yearTranslation;
     },
     offsetDay() {
       const week = this.firstDayOfWeek;
@@ -397,8 +439,11 @@ export default {
       return WEEKS.concat(WEEKS).slice(week, week + 7);
     },
 
-    year() {
-      return this.date.getFullYear();
+    year: {
+      get() {
+        return this.date.getFullYear();
+      },
+      set() {}
     },
 
     month: {
@@ -536,14 +581,41 @@ export default {
   color: aliceblue;
   background: lightblue;
 }
+.controlPanel {
+  display: flex;
+  justify-content: space-between;
+}
 .available {
   cursor: pointer;
 }
 .prev-month {
+  cursor: pointer;
   background: darkgray;
 }
 .next-month {
+  cursor: pointer;
   background: darkgray;
+}
+button {
+  padding: 0 10px;
+  border: 1px solid black;
+  border-radius: 10%;
+  background: white;
+}
+button:hover {
+  background: lightblue;
+}
+table {
+  width: 100%;
+}
+.yearmonth {
+  display: flex;
+}
+p {
+  cursor: pointer;
+}
+.today {
+  background: lightblue;
 }
 </style>
 
