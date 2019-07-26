@@ -1,7 +1,12 @@
+@import "@/assets/font-awesome-4.7.0/css/font-awesome.min.css";
+
 * {
   margin: 0;
   padding: 0;
 }
+::-webkit-scrollbar {
+  display: none;
+  }
 li {
   list-style: none;
 }
@@ -21,7 +26,7 @@ a:hover {
 .page-leave-active {
   opacity: 0;
 }
-
+// login css
 .box {
   border: 1px solid #ccc;
   width: 500px;
@@ -32,18 +37,27 @@ a:hover {
 
 .input_box {
   text-align: center;
-  height: 30px;
-  width: 500px;
+  width: 100%;
   margin: 16px 0;
+  border-radius: 5px;
 }
-input {
-  align-self: center;
-  outline: none;
-  height: 30px;
-  width: 300px;
-  padding-left: 10px;
-}
-
+// label{
+//   margin:0;
+//   flex-grow:1;
+//   text-align: right;
+// }
+// input {
+//   align-self: center;
+//   outline: none;
+//   height: 34px;
+//   width: 100%;
+//   padding-left: 10px;
+//   border-radius: 5px;
+// }
+// textarea{
+//   width: 400px;
+//   border-radius: 5px;
+// }
 .button_login {
   font-size: 22px;
   width: 360px;
@@ -61,4 +75,146 @@ input {
 }
 .error_box {
   color: red;
+}
+
+
+// container-example 公用
+.example {
+  width: 410px;
+  position: relative;
+  flex-grow: 1;
+  border-radius: 5px;
+  // width: 100%;
+  // padding-top: 100px;
+  padding-left: 10px;
+  // li.active,
+  // tr.active {
+  //   background-color: blanchedalmond;
+  // }
+  li.active,tr.active {
+    background-color:#ddd;
+  }
+  .inputBox {
+    position: relative;
+    width: 100%;
+    cursor: text;
+    .divBox {
+      height: 34px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding-right: 33px;
+      overflow: hidden;
+      >span {
+        float: left;
+        color: #333;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        height: 26px;
+        margin: 3px 2px;
+        padding: 0 0.25em;
+        line-height: 24px;
+      }
+      i {
+        cursor: pointer;
+      }
+      input {
+        float: left;
+        border: 0;
+        outline: none;
+        &:focus .divBox{
+          border-color: #66afe9;
+          outline: 0;
+          box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102,175,233,.6);
+        }
+      }
+
+    }
+
+    .readonly {
+      background-color: rgba(0, 0, 0, 0.1);
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      z-index: 100;
+    }
+  }
+}
+.componentDiv{
+  display: flex;
+  padding: 10px;
+  justify-content: space-between;
+  align-items: center;
+  select{
+    height:34px;
+  }
+}
+
+input:focus,
+textarea:focus{
+  outline:0 !important;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075) !important;
+  border-color: #ccc !important;
+}
+
+i {
+  color: #bbb;
+}
+.form-group {
+  display:flex;
+}
+
+.example {
+  span {
+    line-height: 1.1;
+    position: relative;
+  }
+  span .fa {
+    position: relative;
+    right: 0;
+    top: 0;
+  }  
+  span.i-container{
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border: solid 1px #ccc;
+    min-width: 33px;
+    height:34px;
+    padding: 9px 9px;
+    color: #333;
+    background: #FFF;
+  }
+  span.i-container i{
+    color: #333;
+  }
+  span.i-container i.select{
+    color: #333;
+    background: #fff;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+  }
+  // .fa {
+  //   position: absolute;
+  //   right: 0px;
+  //   top: 0px;
+  //   border-top-right-radius: 5px;
+  //   border-bottom-right-radius: 5px;
+  //   border: solid 1px #ccc;
+  // }
+  // i {
+  //   min-width: 33px;
+  //   height:34px;
+  //   padding: 9px 9px;
+  //   color: #333;
+  //   background: #FFF;
+  // }
+  // i.select{
+  //   color: #333;
+  //   background: #fff;
+  //   border-top-right-radius: 5px;
+  //   border-bottom-right-radius: 5px;
+  // }
 }

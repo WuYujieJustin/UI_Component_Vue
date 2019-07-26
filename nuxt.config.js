@@ -22,8 +22,10 @@ export default {
   /*
   ** Global CSS
   */
-  css: [
-    'assets/main.less'    
+  css: [   
+    '@/assets/bootstrap-3.3.7-dist/css/bootstrap.min.css', 
+    '@/assets/font-awesome-4.7.0/css/font-awesome.min.css',
+    '@/assets/main.less'    
   ],
   /*
   ** Plugins to load before mounting the App
@@ -35,7 +37,7 @@ export default {
   */
   modules: [
     // Doc: https://bootstrap-vue.js.org/docs/
-    'bootstrap-vue/nuxt',
+    // 'bootstrap-vue/nuxt',
   ],
   /*
   ** Build configuration
