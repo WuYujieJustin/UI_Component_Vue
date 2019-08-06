@@ -1,41 +1,13 @@
 <template>
   <div class="container1">
     <nav class="topbar">
-      <div class="topbar-left">
-        <img class="logo" src="../static/imgs/logo.png" alt />
-        <div class="nav-item">
-          <img src="../static/imgs/item.png" alt />
-          <p>订单管理</p>
-        </div>
-        <div class="nav-item active">
-          <img src="../static/imgs/item.png" alt />
-          <p>运价管理</p>
-        </div>
-        <div class="nav-item">
-          <img src="../static/imgs/item.png" alt />
-          <p>国际货运</p>
-        </div>
-        <div class="nav-item">
-          <img src="../static/imgs/item.png" alt />
-          <p>销售模块</p>
-        </div>
-        <div class="nav-item">
-          <img src="../static/imgs/item.png" alt />
-          <p>财务管理</p>
-        </div>
-        <div class="nav-item">
-          <img src="../static/imgs/item.png" alt />
-          <p>统计报表</p>
-        </div>
-        <div class="nav-item">
-          <img src="../static/imgs/item.png" alt />
-          <p>数据维护</p>
-        </div>
-        <div class="nav-item">
-          <img src="../static/imgs/item.png" alt />
-          <p>系统设置</p>
-        </div>
-      </div>
+      <i
+        :style="!expend?'margin-left:4%':'margin-left:16%'"
+        class="fa fa-bars fa-2x"
+        @click="isHidehandle"
+        aria-hidden="true"
+        style="cursor:pointer;padding:8px"
+      ></i>
       <div class="topbar-right">
         <div>
           <img src="../static/imgs/msg.png" alt />
@@ -50,137 +22,286 @@
           <div class="user-avatar">
             <img src="../static/imgs/userAvatar.png" alt />
           </div>
-          <span>刘磊</span>
+          <div style="display:flex;align-items: center;">
+            <span style="margin-right:5px">这里是name</span>
+            <i class="fa fa-caret-down" aria-hidden="true"></i>
+          </div>
         </div>
       </div>
     </nav>
     <nav class="leftBar" :class="{active: isActive}">
       <ul v-if="expend">
-        <li class="bar-title">
-          系统菜单
-          <i
-            class="fa fa-angle-double-left fa-2x"
-            @click="isHidehandle"
-            aria-hidden="true"
-            style="width:50px"
-          ></i>
-          <!-- <span >&lt;&lt;</span> -->
+        <li class="logoBar">
+          <nuxt-link to="/">
+            <img class="logo" src="../static/imgs/logo.png" alt />
+          </nuxt-link>
         </li>
         <li v-for="(item,index) in list" :key="index">
-          <div class="li-img" @click="showItem(item)">
-            <div>
+          <div
+            class="li-img"
+            @click="showItem(item,index)"
+            :ref="'leftBar'+index"
+            v-if="item.children && item.children.length>0"
+          >
+            <div style="margin: 10px 23px">
               <img :src="item.src" alt />
               {{item.text}}
             </div>
             <i
-              class="fa fa-angle-double-down fa-2x"
-              v-if="item.children"
-              style="margin-left:30%"
+              class="fa fa-caret-right"
+              v-if="item.children && !item.isShow"
+              style="margin-right: 20px"
+              aria-hidden="true"
+            ></i>
+            <i
+              v-else-if="item.children && item.isShow"
+              class="fa fa-caret-down"
+              style="margin-right:20px"
               aria-hidden="true"
             ></i>
           </div>
+          <div v-else-if="item.url" style="width:100%">
+            <nuxt-link :to="item.url?item.url:''">
+              <div style="padding-left:23px;height:46px;text-align:left;line-height:46px">
+                <img :src="item.src" alt />
+                {{item.text}}
+              </div>
+            </nuxt-link>
+          </div>
+          <div v-else>
+            <div style="margin: 10px 23px">
+              <img :src="item.src" alt />
+              {{item.text}}
+            </div>
+          </div>
 
           <transition name="page">
-            <ul class="item-list" v-if="item.children && item.isShow">
-              <li v-for="(name,i) in item.children" :key="i">
-                <a href="#">{{name.text}}</a>
-              </li>
-            </ul>
+            <div style="width:100%" v-if="item.children && item.isShow">
+              <div v-for="(name,i) in item.children" :key="i">
+                <div v-if="name.moreMsg && name.moreMsg.length>0">
+                  <div class="thirdItem" @click.stop="showThirdItem(name)">
+                    <div
+                      style="margin-left:40px;height:40px;text-align:left;line-height:40px;"
+                    >{{name.text}}</div>
+                    <i
+                      style="margin-right:20px"
+                      class="fa fa-caret-right"
+                      v-if="name.moreMsg && !name.moreMsg[0].showThirdItem"
+                      aria-hidden="true"
+                    ></i>
+                    <i
+                      style="margin-right:20px"
+                      v-else-if="name.moreMsg && name.moreMsg[0].showThirdItem"
+                      class="fa fa-caret-down"
+                      aria-hidden="true"
+                    ></i>
+                  </div>
+                </div>
+                <div v-else-if="name.url">
+                  <nuxt-link :to="name.url" class="thirdItem">
+                    <div
+                      style="margin-left:40px;height:40px;text-align:left;line-height:40px;"
+                    >{{name.text}}</div>
+                    <i
+                      style="margin-right:20px"
+                      class="fa fa-caret-right"
+                      v-if="name.moreMsg && !name.moreMsg[0].showThirdItem"
+                      aria-hidden="true"
+                    ></i>
+                    <i
+                      style="margin-right:20px"
+                      v-else-if="name.moreMsg && name.moreMsg[0].showThirdItem"
+                      class="fa fa-caret-down"
+                      aria-hidden="true"
+                    ></i>
+                  </nuxt-link>
+                </div>
+                <div v-else class="second">
+                  <div
+                    style="margin-left:40px;height:40px;text-align:left;line-height:40px;"
+                  >{{name.text}}</div>
+                  <i
+                    style="margin-right:20px"
+                    class="fa fa-caret-right"
+                    v-if="name.moreMsg && !name.moreMsg[0].showThirdItem"
+                    aria-hidden="true"
+                  ></i>
+                  <i
+                    style="margin-right:20px"
+                    v-else-if="name.moreMsg && name.moreMsg[0].showThirdItem"
+                    class="fa fa-caret-down"
+                    aria-hidden="true"
+                  ></i>
+                </div>
+
+                <div style="width:100%" v-if="name.moreMsg && name.moreMsg[0].showThirdItem">
+                  <div v-for="(names,i) in name.moreMsg" :key="i">
+                    <nuxt-link :to="names.url?names.url:''">
+                      <div class="thirdItem">
+                        <div
+                          style="margin-left:50px;height:35px;text-align:left;line-height:35px"
+                        >{{names.text}}</div>
+                      </div>
+                    </nuxt-link>
+                  </div>
+                </div>
+              </div>
+            </div>
           </transition>
         </li>
       </ul>
+
       <ul v-else>
-        <li @click="isHidehandle">
-          <i class="fa fa-angle-double-right fa-2x" aria-hidden="true"></i>
+        <li>
+          <nuxt-link to="/">狂</nuxt-link>
         </li>
+
         <li
           v-for="(item,index) in list"
           :key="index"
-          @click="secHandle(index)"
+          @click.stop="showItem(item,index)"
           style="position:relative"
+          @mouseleave="hiddenSecchild(item)"
         >
           <img :src="item.src" alt />
-          <ul
-            class="secChild"
-            :ref="'secChild'+index"
-            v-if="item.children"
-            @mouseleave="mouseleave(index)"
-          >
-            <li v-for="(items,index) in item.children" :key="index">
-              <a href="#">{{items.text}}</a>
-            </li>
-          </ul>
+
+          <transition name="page">
+            <div v-if="item.children && item.isShow" class="secChild">
+              <div v-for="(name,i) in item.children" :key="i" style="background:rgb(30, 40, 44)">
+                <!-- <a href="#">{{name.text}}</a> -->
+                <div v-if="!name.moreMsg">
+                  <nuxt-link to="/listviewPage" class="thirdItem">
+                    <div style="margin-left:40px">{{name.text}}</div>
+                    <i
+                      style="margin-right:20px"
+                      class="fa fa-caret-right"
+                      v-if="name.moreMsg && !name.moreMsg[0].showThirdItem"
+                      aria-hidden="true"
+                    ></i>
+                    <i
+                      style="margin-right:20px"
+                      v-else-if="name.moreMsg && name.moreMsg[0].showThirdItem"
+                      class="fa fa-caret-down"
+                      aria-hidden="true"
+                    ></i>
+                  </nuxt-link>
+                </div>
+                <div v-else>
+                  <div class="thirdItem" @click.stop="showThirdItem(name)">
+                    <div style="margin-left:40px;">{{name.text}}</div>
+                    <i
+                      style="margin-right:20px"
+                      class="fa fa-caret-right"
+                      v-if="name.moreMsg && name.moreMsg[0].showThirdItem"
+                      aria-hidden="true"
+                    ></i>
+                    <i
+                      style="margin-right:20px"
+                      v-else-if="name.moreMsg && !name.moreMsg[0].showThirdItem"
+                      class="fa fa-caret-down"
+                      aria-hidden="true"
+                    ></i>
+                  </div>
+                </div>
+
+                <div v-if="name.moreMsg && name.moreMsg[0].showThirdItem">
+                  <div v-for="(names,i) in name.moreMsg" :key="i">
+                    <!-- <a href="#">{{name.text}}</a> -->
+                    <div class="thirdItem" @click.stop="showThirdItem(name)">
+                      <div style="margin-left:50px">{{names.text}}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
         </li>
       </ul>
     </nav>
-    <nuxt :style="!expend?'padding-left:4%':'padding-left:16%'" style="min-height:520px"/>
+    <nuxt :style="!expend?'padding-left:4%':'padding-left:16%'" style="min-height:520px" />
   </div>
 </template>
 
 <script>
 export default {
-  components: {
-
-  },
+  components: {},
   data() {
     return {
       tabList: [],
       list: [
-        {
-          name: "nav-item",
+        {     
           src: require("@/static/imgs/subway.png"),
-          toggleSrc: require("@/static/imgs/bottom.png"),
-          text: "铁路模块",
+          text: "listviewPage",
+          children: [],
+          url: "/listviewPage",
+          isShow: false
+        },
+        {   
+          src: require("@/static/imgs/subway.png"),
+          text: "这里有二级目录",
           children: [
-            { name: "sonItem", text: "这是二级菜单" },
-            { name: "sonItem", text: "这是二级菜单" },
-            { name: "sonItem", text: "这是二级菜单" }
+            {
+              text: "还有三级目录",
+              moreMsg: [
+                {
+                  name: "thirdItem",
+                  text: "三级listviewPage",
+                  url: "/listviewPage",
+                  showThirdItem: false
+                }
+              ]
+            },
+            { name: "sonItem", text: "listviewPage", url: "/listviewPage" },
+            { name: "sonItem", text: "listviewPage", url: "/listviewPage" }
           ],
           isShow: false
         },
         {
-          name: "nav-item",
           src: require("../static/imgs/subway.png"),
-          toggleSrc: require("../static/imgs/bottom.png"),
-          text: "海运出口",
+          text: "这里有二级目录",
           children: [
-            { name: "sonItem", text: "这是二级菜单" },
-            { name: "sonItem", text: "这是二级菜单" },
-            { name: "sonItem", text: "这是二级菜单" }
+            {
+              name: "sonItem",
+              text: "langCode",
+              moreMsg: [
+                {
+                  name: "thirdItem",
+                  text: "三级listviewPage",
+                  url: "/listviewPage",
+                  showThirdItem: false
+                }
+              ]
+            },
+            { name: "sonItem", text: "langCode", url: "/langCode" },
+            { name: "sonItem", text: "langCode", url: "/langCode" }
           ],
           isShow: false
         },
         {
-          name: "nav-item",
           src: require("../static/imgs/subway.png"),
-          toggleSrc: require("../static/imgs/bottom.png"),
-          text: "海运出口",
+          text: "这里有二级目录",
           children: [
-            { name: "sonItem", text: "这是二级菜单" },
-            { name: "sonItem", text: "这是二级菜单" },
-            { name: "sonItem", text: "这是二级菜单" }
+            { name: "sonItem", text: "listviewPage" },
+            { name: "sonItem", text: "listviewPage" },
+            { name: "sonItem", text: "listviewPage" }
           ],
           isShow: false
         },
-        {
-          name: "nav-item",
+        {  
           src: require("../static/imgs/subway.png"),
-          toggleSrc: require("../static/imgs/bottom.png"),
-          text: "空运出口",
+          text: "city",
+          url: "/city",
           isShow: false
         },
         {
-          name: "nav-item",
           src: require("../static/imgs/subway.png"),
-          toggleSrc: require("../static/imgs/bottom.png"),
-          text: "空运出口",
+          text: "translate",
+          url: "/translate",
           isShow: false
         },
         {
-          name: "nav-item",
           src: require("../static/imgs/subway.png"),
-          toggleSrc: require("../static/imgs/bottom.png"),
-          text: "个人设置",
+          text: "这里有二级目录",
           children: [
             { name: "sonItem", text: "这是二级菜单" },
             { name: "sonItem", text: "这是二级菜单" },
@@ -197,32 +318,46 @@ export default {
   },
 
   methods: {
-    showItem(item) {
-      // 设置节流
+    showItem(item, index) {
       item.isShow = !item.isShow;
+    
+      if (this.expend) {
+        let obj = this.$refs;
+        console.log("obj", obj);
+        for (const key in obj) {
+          console.log("key", key);
+          if (key.indexOf("leftBar") !== -1) {
+            if (key.indexOf("leftBar" + index) !== -1) {
+              obj[key][0].classList.add("active");
+            } else {
+              obj[key][0].classList.remove("active");
+            }
+          }
+        }
+      } else {
+      
+      }
+     
     },
-    isHidehandle(event) {
+    showThirdItem(name) {
+      if (name.moreMsg) {
+        name.moreMsg[0].showThirdItem = !name.moreMsg[0].showThirdItem;
+      }
+    },
+    isHidehandle() {
       this.isActive = !this.isActive;
+      if (this.expend) {
+        for (let i = 0; i < this.list.length; i++) {
+          this.list[i].isShow = false;
+        }
+        console.log("this.list", this.list);
+      }
       this.expend = !this.expend;
     },
-    secHandle(index) {
-      console.log(index);
-
-      var _this = this;
-      console.log("_this.$refs['secChild'+index]", _this.$refs);
-      // 遍历对象 用 for in
-      for (const key in _this.$refs) {
-        _this.$refs[key][0].style.display = "none";
-      }
-      console.log(
-        '_this.$refs["secChild" + index]2222',
-        _this.$refs["secChild" + index]
-      );
-      if (!_this.$refs["secChild" + index]) return;
-      _this.$refs["secChild" + index][0].style.display = "block";
-    },
-   mouseleave(index) {
-      this.$refs["secChild" + index][0].style.display = "none";
+   
+    hiddenSecchild(item) {
+      item.isShow = false;
+      console.log(item.isShow);
     }
   }
 };

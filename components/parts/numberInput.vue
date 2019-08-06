@@ -1,29 +1,44 @@
 <template>
-  <div class="example">
-    <div >
+  <div class="example" ref="totalWidth">
+    <div style="display:flex">
       <!-- <label for="IInputnumber" :style="{color:`${color}`}">{{label}}</label> -->
-      <label type="button" disabled v-if="suffixIcon" :value="`${unit}`"></label>
       <input
         class="form-control"
-        ref="inputcompon"
+        ref="input"
         type="text"
         v-bind="$attrs"
         :placeholder="placeholder"
         :readonly="readonly"
         :suffixIcon="suffixIcon"
         :isFormat="isFormat"
-        :value="displayText"
+        :value="firstText"
         v-on="inputListeners"
         :precision="precision"
         :required="required"
-        :style="{'padding-right':icon?'23px':0}"
+      />
+      <div style="width:50px; align-item:center" v-if="numberrange">
+        <span class="glyphicon glyphicon-minus" aria-hidden="true" style="margin:10px"></span>
+      </div>
+      <input
+        v-if="numberrange"
+        class="form form-control"
+        ref="secondinput"
+        type="text"
+        v-bind="$attrs"
+        :placeholder="placeholder"
+        :readonly="readonly"
+        :suffixIcon="suffixIcon"
+        :isFormat="isFormat"
+        :value="secondText"
+        v-on="secondinputListeners"
+        :precision="precision"
+        :required="required"
+        :style="{'width':width}"
       />
     </div>
-    <span class="i-container">
-
-    <i v-if="icon || icontext" v-bind:class="'fa ' + icon"  aria-hidden="true">{{icontext}}</i>
+    <span v-if="icon || icontext" class="i-container" ref="ispan" @click="inputfocus">
+      <i v-bind:class="'fa ' + icon" aria-hidden="true">{{icontext}}</i>
     </span>
-
   </div>
 </template>
 
@@ -167,20 +182,34 @@ NumeralFormatter.prototype = {
 };
 
 export default {
+  created() {
+    // console.log("pre?????????????" + this.precision);
+  },
+  data() {
+    return {
+      spanwidth: 0,
+      width: "0px"
+    };
+  },
   inheritAttrs: false,
   props: {
+    numberrange: {
+      type: Boolean
+    },
     required: {
       type: Boolean,
       default: false
     },
     // set for v-model
-    value: null,
+    value: {
+      type: [Array,Object]
+    },
     // 单位
     icon: {
-      type: String,
+      type: String
     },
     icontext: {
-      type: String,
+      type: String
     },
     unit: {
       type: String,
@@ -220,11 +249,23 @@ export default {
     },
     //精度
     precision: {
-      type: Number,
-      default: 2
+      type: Number
     }
   },
   mounted() {
+    // // console.log("this.$refs.ispan",this.$refs.ispan)
+    if (this.$refs.ispan) {
+      var dom = this.$refs.ispan;
+      let totalWidth = this.$refs.totalWidth.offsetWidth;
+      this.spanwidth = dom.offsetWidth;
+      // 固定宽度 400px-50px=350px
+      this.width = (totalWidth - 50 - this.spanwidth) / 2 + "px";
+      if (this.numberrange) {
+        this.$refs.input.style.width = this.width;
+      }else{
+        this.$refs.input.style.width = totalWidth - this.spanwidth +"px"
+      }
+    }
     this.tempvalue = this.value;
     const groupStyle = this.isFormat
       ? NumeralFormatter.groupStyle.thousand
@@ -237,20 +278,35 @@ export default {
     );
     //直接改变输入框内的值会改变光标的位置
     if (this.value != null) {
-      this.$refs.inputcompon.value = this.formatter.format(
-        this.value.toString()
-      );
+      this.$refs.input.value = this.formatter.format(this.value.toString());
     }
   },
   computed: {
-    displayText() {
-      if (this.value != null && this.formatter) {
-        return this.formatter.format(this.value.toString());
+    firstValue() {
+      return this.value[0];
+    },
+    secondValue() {
+      if (this.numberrange) {
+        return this.value[1];
       } else {
-        return "";
+        return [];
       }
     },
-    inputListeners: function() {
+    firstText() {
+      if (this.formatter && this.firstValue) {
+        return this.formatter.format(this.firstValue.toString());
+      } else {
+        return this.firstValue;
+      }
+    },
+    secondText() {
+      if (this.formatter && this.secondValue) {
+        return this.formatter.format(this.secondValue.toString());
+      } else {
+        return this.secondValue;
+      }
+    },
+    secondinputListeners: function() {
       var vm = this;
       // `Object.assign` 将所有的对象合并为一个新对象
       return Object.assign(
@@ -262,12 +318,12 @@ export default {
         {
           keydown(e) {
             vm.backspacePressed = e.keyCode === 8;
-            vm.oldstr = vm.$refs.inputcompon.value;
-            let position = vm.$refs.inputcompon.selectionStart;
+            vm.oldstr = vm.$refs.secondinput.value;
+            let position = vm.$refs.secondinput.selectionStart;
             vm.isMoveCursor = false;
             if (
-              vm.$refs.inputcompon.value[
-                vm.$refs.inputcompon.selectionStart - 1
+              vm.$refs.secondinput.value[
+                vm.$refs.secondinput.selectionStart - 1
               ] === ","
             ) {
               vm.isMoveCursor = true;
@@ -275,15 +331,23 @@ export default {
           },
           // 这里确保组件配合 `v-model` 的工作
           input: function(event) {
-            let input = vm.$refs.inputcompon;
+            let input = vm.$refs.secondinput;
             let rawStr = input.value;
 
             if (rawStr === "") {
-              vm.$emit("input", 0);
-              vm.tempvalue = 0;
+              // if firsttext exits
+              if (vm.firstText) {
+                vm.$emit("input", [
+                  Number(vm.firstText.toString().replace(/,/g, "")),
+                  null
+                ]);
+              } else {
+                vm.$emit("input", [null, null]);
+              }
+              vm.tempvalue = [];
               return;
             }
-            let num = Number(rawStr.replace(/,/g, ""));
+            let num = rawStr.replace(/,/g, "");
             if (isNaN(num)) {
               num = vm.tempvalue;
             }
@@ -318,13 +382,158 @@ export default {
                 }
               }
               input.value = str;
-
               input.setSelectionRange(newStart, newEnd);
             }
-            vm.$emit("input", num);
+
+            // 删除最后一位小数  保留两位小数  抛出的num有三位
+            // add toString in case num is number
+            if (
+              num.toString().indexOf(".") > 0 &&
+              num
+                .toString()
+                .split(".")[1]
+                .toString().length === 3
+            ) {
+              num = Number(num.substring(0, num.toString().length - 1));
+            }
+            if (num.toString().indexOf(".") === num.length - 1) {
+              num = Number(num) + ".";
+            } else {
+              num = Number(num);
+            }
+            if (vm.firstText !== null) {
+              // console.log("not null");
+              vm.$emit("input", [
+                Number(vm.firstText.toString().replace(/,/g, "")),
+                num
+              ]);
+            } else {
+              // console.log(vm.firstText + "??????????????");
+              vm.$emit("input", [null, num]);
+            }
           }
         }
       );
+    },
+    inputListeners: function() {
+      var vm = this;
+      // `Object.assign` 将所有的对象合并为一个新对象
+      return Object.assign(
+        {},
+        // 从父级添加所有的监听器
+        this.$listeners,
+        // 然后我们添加自定义监听器，
+        // 或覆写一些监听器的行为
+        {
+          keydown(e) {
+            vm.backspacePressed = e.keyCode === 8;
+            vm.oldstr = vm.$refs.input.value;
+            let position = vm.$refs.input.selectionStart;
+            vm.isMoveCursor = false;
+            if (
+              vm.$refs.input.value[vm.$refs.input.selectionStart - 1] === ","
+            ) {
+              vm.isMoveCursor = true;
+            }
+          },
+          // 这里确保组件配合 `v-model` 的工作
+          input: function(event) {
+            let input = vm.$refs.input;
+            let rawStr = input.value;
+            // console.log(rawStr + "rawStr");
+
+            if (rawStr === "") {
+              if (vm.secondText) {
+                vm.$emit("input", [
+                  null,
+                  Number(vm.secondText.toString().replace(/,/g, ""))
+                ]);
+              } else {
+                // if numberrange emit two null
+                if(vm.numberrange){
+                  vm.$emit("input", [null, null])
+                }else{
+                  vm.$emit("input",[null])
+                }
+              }
+              vm.tempvalue = [];
+              return;
+            }
+            let num = rawStr.replace(/,/g, "");
+            if (isNaN(num)) {
+              num = vm.tempvalue;
+            }
+            vm.tempvalue = num;
+            let str = vm.formatter.format(rawStr);
+            if (str != undefined && str !== rawStr) {
+              let start = input.selectionStart;
+              let end = input.selectionEnd;
+              let rightStart = rawStr.length - start;
+              let rightEnd = rawStr.length - end;
+              // TODO： calculate start and end.
+              let newStart = str.length - rightStart;
+              let newEnd = str.length - rightEnd;
+              if (start === end) {
+                // if cursor on right of .
+                const pointIndex = str.indexOf(".");
+                if (pointIndex >= 0 && start > pointIndex) {
+                  newStart = start;
+                  newEnd = end;
+                }
+                if (vm.backspacePressed && vm.isMoveCursor) {
+                  // backspace pressed, move cursor before ','
+                  newStart--;
+                  newEnd--;
+                } else if (rawStr[start] === "," && rawStr[start - 1] === ",") {
+                  newStart++;
+                  newEnd++;
+                }
+                if (newStart < 0) {
+                  newStart = 0;
+                  newEnd = 0;
+                }
+              }
+              input.value = str;
+              input.setSelectionRange(newStart, newEnd);
+            }
+            // 删除最后一位小数  保留两位小数  抛出的num有三位
+            // add toString in case num is number
+            if (
+              num.toString().indexOf(".") > 0 &&
+              num
+                .toString()
+                .split(".")[1]
+                .toString().length === 3
+            ) {
+              num = Number(num.substring(0, num.toString().length - 1));
+            }
+            if (num.toString().indexOf(".") === num.length - 1) {
+              // num = Number(num)+"."
+            } else {
+              num = Number(num);
+            }
+
+            if (!vm.numberrange) {
+              vm.$emit("input", [num]);
+            } else {
+              // if numberrange emit the origal secondtext
+              if (vm.secondText) {
+                vm.$emit("input", [
+                  num,
+                  Number(vm.secondText.toString().replace(/,/g, ""))
+                ]);
+              } else {
+                vm.$emit("input", [num, null]);
+              }
+            }
+          }
+        }
+      );
+    }
+  },
+  methods: {
+    inputfocus() {
+      this.$refs.input.focus();
     }
   }
 };

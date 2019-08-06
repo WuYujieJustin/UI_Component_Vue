@@ -153,8 +153,8 @@ export default {
             }else{
                 return {
                     backgroundColor:"transparent",
-                    borderLeft:"1px solid chocolate",
-                    borderRight:"1px solid chocolate",
+                    borderLeft:"1px solid #ccc",
+                    borderRight:"1px solid #ccc",
                 };
             }
         },
@@ -177,7 +177,7 @@ table{
     width: 100%;
 }
 table,td{
-    border: 1px solid chocolate;
+    border: 1px solid #cccccc;
 }
 tbody tr{
     cursor: pointer;

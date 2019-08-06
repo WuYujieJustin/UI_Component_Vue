@@ -1,14 +1,16 @@
 <template>
-  <div class="example" >
+  <div class="example">
     <!-- v-on:input="transData" -->
-    <textarea class="form-control" style="resize:none"
+    <textarea
+      ref="input"
+      class="form-control"
+      style="resize:none"
       v-bind="$attrs"
       v-on="inputListeners"
-v-bind:style="{ height: height + 'px' ,}"
+      v-bind:style="{ height: height + 'px' ,}"
       cols="50"
       rows="5"
       v-bind:value="value"
-
       :placeholder="placeholder"
       :readonly="readonly"
       :required="required"
@@ -27,9 +29,9 @@ export default {
     placeholder: String,
     readonly: Boolean,
     required: Boolean,
-    height:String,
+    height: String
   },
-    computed: {
+  computed: {
     inputListeners: function() {
       var vm = this;
       // `Object.assign` 将所有的对象合并为一个新对象
@@ -53,11 +55,9 @@ export default {
     // console.log(this.$attrs);
     // console.log(`$listeners:`);
     // console.log(this.$listeners); // 父级添加的所有属性都在这里
-    // console.log(this.$listeners.inputListeners.fns); // 
-
+    // console.log(this.$listeners.inputListeners.fns); //
   },
-  methods: {
-  }
+  methods: {}
 };
 </script>
 <style>

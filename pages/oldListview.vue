@@ -1,33 +1,19 @@
 <template>
     <div>
-        <h1>这是一个废弃页面，保留仅是为了参考部分代码</h1>
-        <h1>QAQ</h1>
-        &lt;Listview
-        :data="foods"
-        :title="titleCommon"
-        :displayId="true"
-        :checkBox="true"
-        :multiSelect="false"
-        :limit="5"
-        :excel="true"
-        v-model="TAT"
-        @select="test"
-        /
-
-
-        <h1>这里是表格的设置</h1>
-        《ListviewOperator :data="title" v-model="titleCommon"/》
+        <h1>文档树</h1>
     </div>
 </template>
 <script>
-/*import Listview from "~/components/parts/Listview.vue"
-import ListviewOperator from "~/components/parts/ListviewOperator.vue"*/
+import ListviewTable from "~/components/parts/ListviewTable.vue"
+import ListviewTableSetting from "~/components/parts/ListviewTableSetting.vue"
+import DialogueBox from "~/components/parts/DialogueBox"
 
 export default {
-    /*components: {
-        Listview,
-        ListviewOperator
-    },*/
+    components: {
+        ListviewTable,
+        ListviewTableSetting,
+        DialogueBox
+    },
     methods:{
         test(v){
             console.log("事件被触发")
@@ -37,8 +23,9 @@ export default {
     },
     data() {
         return {
-            TAT:[],
+            TAT:{},
             titleCommon:[],//组件间传递数据
+            box:false,
             title:[
                 
                 {key:"name",title:"名称",width:"150"},

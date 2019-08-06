@@ -4,19 +4,25 @@
   margin: 0;
   padding: 0;
 }
-::-webkit-scrollbar {
-  display: none;
-  }
+// ::-webkit-scrollbar {
+//   display: none;
+//   }
+
 li {
   list-style: none;
 }
 a {
-  color: rgb(60, 141, 188);
+  color: rgb(178, 173, 164);
   text-decoration: none;
 }
-a:hover {
+a:active,a:visited {
+  outline: none;
+  color: #b2ada4;
   text-decoration: none;
-  color: rgb(60, 141, 188);
+}
+a:focus {
+  text-decoration: none;
+  background:rgb(92, 92, 92);
 }
 .page-enter-active,
 .page-leave-active {
@@ -80,7 +86,7 @@ a:hover {
 
 // container-example 公用
 .example {
-  width: 410px;
+  // width: 410px;
   position: relative;
   flex-grow: 1;
   border-radius: 5px;
@@ -92,7 +98,7 @@ a:hover {
   //   background-color: blanchedalmond;
   // }
   li.active,tr.active {
-    background-color:#ddd;
+    background-color:#E6E9ED;
   }
   .inputBox {
     position: relative;
@@ -102,7 +108,7 @@ a:hover {
       height: 34px;
       border: 1px solid #ccc;
       border-radius: 5px;
-      padding-right: 33px;
+      // padding-right: 33px;
       overflow: hidden;
       >span {
         float: left;
@@ -157,9 +163,6 @@ textarea:focus{
   border-color: #ccc !important;
 }
 
-i {
-  color: #bbb;
-}
 .form-group {
   display:flex;
 }

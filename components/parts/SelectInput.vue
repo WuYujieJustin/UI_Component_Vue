@@ -1,16 +1,10 @@
 <template>
-  <div class="example">
+  <div class="example" ref="example">
     <div class="all-select-input">
       <div class="inputBox">
         <div :class="{'readonly':readonly}"></div>
-        <div
-          class="divBox"
-          @click="handleInput"
-          v-on:mousedown="ulMousedown"
-          ref="divBox"
-          :style="{'padding-right':icon?'33px':0}"
-        >
-          <span v-for="obj in selectedData" :key="obj.id">
+        <div class="divBox" @click="handleInput" v-on:mousedown="ulMousedown" ref="divBox">
+          <!-- <span v-for="(obj,index) in selectedData" :key="obj.id" :ref="'span'+index">
             {{displayData(obj,displayField)}}
             <span
               class="close"
@@ -19,12 +13,25 @@
               :data-id="obj.id"
               aria-hidden="true"
             >&times;</span>
+          </span>-->
+          <span ref="span0" v-if="selectedData.length>0">
+            {{displayData(selectedData[0],displayField)}}
+            <span
+              class="close"
+              aria-label="Close"
+              v-on:click.stop="removeSelected"
+              :data-id="selectedData[0].id"
+              aria-hidden="true"
+            >&times;</span>
           </span>
+
+          <span v-if="selectedData.length>1" ref="span1">+ {{selectedData.length-1}}…</span>
+
           <input
             class="form-control"
             type="text"
             ref="input"
-            :style="{'width':(selectedData.length>0?'50%':'100%'),'padding-right':(selectedData.length>0?'0px':'32px')}"
+            :style="{'width':(selectedData.length>0?(inputwidth+'px'):'100%'),'padding-right':selectedData.length===0?spanwidth+'px':0}"
             v-on:focus="toggleUl"
             v-on:blur="toggleUl"
             v-on:keyup.up="up"
@@ -34,27 +41,24 @@
             v-on:keyup.backspace="deleteSeleted"
             :placeholder="placeholder"
             v-on:input="input"
-            :required="required"
-            :value="value"
+            :required="selectedData.length>0?false:required"
           />
         </div>
-        <span class="i-container">
-    <i v-if="icon || icontext" v-bind:class="'fa ' + icon"  aria-hidden="true">{{icontext}}</i>
+        <span class="i-container" ref="ispan" @click="inputfocus" v-on:mousedown="ulMousedown">
+          <i v-if="icon || icontext" v-bind:class="'fa ' + icon" aria-hidden="true">{{icontext}}</i>
 
-    <i class="fa fa-chevron-down select" v-else-if="!icon && downArrow" aria-hidden="true"></i>
-    <i class="fa fa-chevron-up select" v-else aria-hidden="true"></i>
+          <i class="fa fa-chevron-down select" v-else-if="!icon && downArrow" aria-hidden="true"></i>
+          <i class="fa fa-chevron-up select" v-else aria-hidden="true"></i>
         </span>
-
 
         <ul
           class="ul_box"
-          :style="{'position':'absolute','top':topDiv}"
+          :style="{'position':fixed?'fixed':'absolute','top':topDiv}"
           ref="scrollDiv"
           v-on:mousedown="ulMousedown"
-          v-if="showUl"
+          v-if="showUl && !searchState"
           @mouseenter="mouseenter"
           @mouseleave="mouseleave"
-          :value="value"
         >
           <li
             v-for="(option,index) in options"
@@ -67,6 +71,35 @@
             :class="hasClass(option.id,index)"
           >{{option.text}}</li>
         </ul>
+        <ul
+          class="ul_box"
+          :style="{'position':fixed?'fixed':'absolute','top':topDiv}"
+          ref="scrollDiv"
+          v-on:mousedown="ulMousedown"
+          v-else-if="showUl && searchState && !noResult"
+          @mouseenter="mouseenter"
+          @mouseleave="mouseleave"
+        >
+          <li
+            v-for="(option,index) in searchOptions"
+            :key="index"
+            :ref="index"
+            v-on:click="ulClick(option.id,index)"
+            :value="option.id"
+            :data-id="option.id"
+            :data-index="index"
+            :class="hasClass(option.id,index)"
+          >{{option.text}}</li>
+        </ul>
+        <ul
+          class="ul_box"
+          :style="{'position':fixed?'fixed':'absolute','top':topDiv}"
+          ref="scrollDiv"
+          v-on:mousedown="ulMousedown"
+          v-else-if="showUl && noResult"
+        >
+          <li>暂无结果，请重新搜索……</li>
+        </ul>
       </div>
     </div>
   </div>
@@ -76,11 +109,24 @@
 export default {
   data() {
     return {
+      fixed: false,
+      clickPix: 0,
+      divTop: 0,
+      isUpDown: false,
+      noResult: false,
+      triggerEnter: false,
+      searchOptions: [],
+      searchState: false,
+      triggerDel: true,
+      spanwidth: 0,
+      displayspanwidth: 0,
+      inputwidth: 0,
       selectedData: [],
       showUl: false,
       currentUl: 0,
       downArrow: true,
-      topDiv: ''
+      topDiv: "",
+      top: ""
     };
   },
   props: {
@@ -121,7 +167,7 @@ export default {
       type: String
     },
     icontext: {
-      type: String,
+      type: String
     },
     readonly: {
       type: Boolean,
@@ -140,15 +186,15 @@ export default {
   },
 
   computed: {
-    divTop(){
-      return  this.$refs.divBox.getBoundingClientRect().top
-    },
-    screenHeight(){
-      return document.documentElement.clientHeight
-    }  
+    // divTop() {
+    //   return this.$refs.input.getBoundingClientRect().top;
+    // },
+    zeroIndex() {
+      return;
+    }
   },
   mounted: function() {
-    // console.log("数据挂载执行完毕，打印value", this.value);
+    // // console.log("数据挂载执行完毕，打印value", this.value);
     if (
       this.options &&
       this.options.length > 0 &&
@@ -158,40 +204,114 @@ export default {
       this.selectedData.length == 0
     ) {
       //数据已经挂载，外部传入value（选中的信息），将对应value显示出来
-      // console.log("该自动选中列表咯");
+      // // console.log("该自动选中列表咯");
       var that = this;
       that.value.forEach(function(num) {
         that.options.forEach(function(obj, index) {
           if (obj.id == num) {
-            // console.log("obj", obj);
+            // // console.log("obj", obj);
             that.selectedData.push(obj);
           }
         });
       });
     }
+    // // console.log("this.$refs",this.$refs)
+  },
+  updated() {
+    var that = this;
+    //获取已选择span选项在display的宽度
+    setTimeout(() => {
+      // console.log("updated")
+      if (this.$refs.ispan) {
+        let dom = this.$refs.ispan;
+        this.spanwidth = dom.offsetWidth;
+        // console.log("spanwidth", this.spanwidth);
+      }
+      if (that.$refs.span0) {
+        let dom0 = that.$refs.span0;
+        that.displayspanwidth = dom0.offsetWidth + 16;
+        if (that.$refs.span1) {
+          let dom1 = that.$refs.span1;
+          that.displayspanwidth += dom1.offsetWidth + 6;
+        }
+        let example = that.$refs.example;
+        that.inputwidth =
+          example.offsetWidth - that.displayspanwidth - that.spanwidth;
+        // console.log("that.displayspanwidth", that.displayspanwidth);
+      }
+    }, 10);
   },
   methods: {
-        scroll(){
-      return window.onscroll 
-    },
-    input: function(event) {
-      // console.log("event.target.value",event.target.value)
-      // console.log("input event", event);
-      event.target.value = this.value;
-      if (
-        event.inputType === "deleteContentBackward" ||
-        event.inputType === "deleteContentForward"
-      ) {
-        this.selectedData.pop();
-        this.value.pop();
+    scrollListener: function() {
+      if (this.showUl) {
+        this.divTop = this.$refs.example.getBoundingClientRect().top;
+        // console.log("距顶", this.divTop);
+        // if (
+        //   (!this.searchState && this.lists.length >= 13) ||
+        //   (this.searchState && this.searchLists.length >= 13)
+        // ) {
+        //位于下半部分
+        // console.log("clientHeight/2",document.documentElement.clientHeight/2)
+        // console.log("this.divTop",this.divTop)
+        let halfHeight = document.documentElement.clientHeight / 2;
+        if (this.divTop == halfHeight) {
+          this.clickPix = halfHeight;
+        }
+        if (this.divTop - halfHeight >= 0) {
+          this.isUpDown = true;
+          let that = this;
+          setTimeout(() => {
+            let dom = that.$refs.scrollDiv;
+            let domHeight = dom.offsetHeight;
+            // 矫正值60，因为顶部高60
+            if (domHeight + 60 < that.divTop) {
+              // this.topDiv = "-410px";
+              this.fixed = false;
+              that.topDiv = "-" + domHeight + "px";
+            } else {
+              // console.log("距顶", that.divTop);
+              // console.log("移动距离", that.divTop - that.clickPix);
+              // let dif = that.divTop - that.clickPix;
+              // that.topDiv = "-" + (domHeight + dif - 26) + "px";
+              that.fixed = true;
+              that.topDiv = 60 + "px";
+            }
+          }, 10);
+        } else {
+          this.fixed = false;
+          this.isUpDown = false;
+          this.topDiv = "";
+        }
+        // }
+        // else {
+        //   // console.log("lists222222222", this.lists);
+        //   // 按照option 个数来计算高度
+        //   if (
+        //     document.documentElement.clientHeight - this.divTop <
+        //     (400 * this.lists.length) / 13
+        //   ) {
+        //     this.topDiv = (-this.lists.length * 400) / 13 + "px";
+        //   } else {
+        //     this.topDiv = "";
+        //   }
+        // }
       }
     },
+    input: function(event) {
+      this.triggerDel = false;
+      this.triggerEnter = false;
+    },
+    inputfocus() {
+      this.$refs.input.focus();
+    },
     mouseenter: function() {
-      // console.log("mouseEnter");
-      this.$refs[this.currentUl][0].classList.remove("hover");
+      // // console.log("mouseEnter");
+      if (!this.searchState) {
+        this.$refs[this.currentUl][0].classList.remove("hover");
+      }
     },
     mouseleave: function() {
-      // console.log("mouseLeave");
+      // // console.log("mouseLeave");
     },
     //将选中的记录按照父组件要求的内容输出
     //传入的输出字段，遍历，找到第一个能输出的字段，结束。若找不到，则默认输出id
@@ -232,28 +352,79 @@ export default {
       }
       return showStr;
     },
-    enterPreventDefault(event){
-      event.preventDefault()
+    enterPreventDefault(event) {
+      event.preventDefault();
     },
     enter: function(event) {
       event.preventDefault();
-      event.target.value = event.target.value.replace(/\s+/g, "");
-      let id = this.$refs[this.currentUl][0].dataset.id;
-      // console.log("this.currentUl", this.currentUl);
-      // this.$options.methods.trClick(id,this.currentUl)
-      this.ulClick(id, this.currentUl);
+      if (this.triggerEnter === true && this.noResult === false) {
+        event.target.value = event.target.value.replace(/\s+/g, "");
+        let id = this.$refs[this.currentUl][0].dataset.id;
+        // // console.log("this.currentUl", this.currentUl);
+        // this.$options.methods.trClick(id,this.currentUl)
+        this.ulClick(id, this.currentUl);
+      } else {
+        this.noResult = false;
+        let searchString = "";
+        if (event.target.value.length > 0) {
+          searchString = event.target.value.trim().toLowerCase();
+          event.target.value = searchString;
+        } else {
+          this.searchOptions = [];
+          this.searchState = false;
+        }
+        if (searchString) {
+          this.searchOptions = this.options;
+          this.searchOptions = this.searchOptions.filter(function(obj) {
+            let keys = Object.keys(obj);
+            for (let i = 0; i < keys.length; i++) {
+              let key = keys[i];
+              if (
+                obj[key]
+                  .toString()
+                  .toLowerCase()
+                  .indexOf(searchString) !== -1
+              ) {
+                return obj;
+              }
+            }
+          });
+          this.searchState = true;
+          this.currentUl = 0;
+          if (this.searchOptions.length === 0) {
+            this.noResult = true;
+            event.target.value = "";
+          }
+        } else {
+          this.searchState = false;
+        }
+
+        let that = this;
+        if (this.isUpDown) {
+          setTimeout(() => {
+            let dom1 = that.$refs.scrollDiv;
+            console.log("scrollDiv", dom1.offsetHeight);
+            that.topDiv = "-" + dom1.offsetHeight + "px";
+          }, 10);
+        }
+      }
     },
     up: function(event) {
       event.preventDefault();
+      this.triggerEnter = true;
+
       if (this.currentUl === 0) {
+        if (this.$refs[this.currentUl][0]) {
+          this.$refs[this.currentUl][0].classList.add("hover");
+        }
         return;
       }
-      // console.log("按上键", event);
+      // // console.log("按上键", event);
       //控制滚动
       if (
         this.$refs.scrollDiv.scrollHeight > this.$refs.scrollDiv.clientHeight
       ) {
-        // console.log("ul有滚动条")
+        // // console.log("ul有滚动条")
         // if (this.currentUl > 8) {
         //   this.$refs[this.currentUl - 8][0].scrollIntoView(false);
         // } else {
@@ -265,24 +436,32 @@ export default {
           this.$refs[this.currentUl][0].scrollIntoView(false);
         }
       } else {
-        // console.log("ul没有滚动条")
+        // // console.log("ul没有滚动条")
       }
-      this.$refs[this.currentUl][0].classList.remove("hover");
-      this.$refs[this.currentUl - 1][0].classList.add("hover");
-      this.currentUl--;
+      if (this.$refs[this.currentUl - 1][0]) {
+        this.$refs[this.currentUl][0].classList.remove("hover");
+        this.$refs[this.currentUl - 1][0].classList.add("hover");
+        this.currentUl--;
+      }
     },
     down: function(event) {
       event.preventDefault();
-      // console.log("按下键", event);
+      // // console.log("按下键", event);
+      if (this.currentUl === 0 && this.triggerEnter === false) {
+        if (this.$refs[this.currentUl][0]) {
+          this.$refs[this.currentUl][0].classList.add("hover");
+        }
+        this.triggerEnter = true;
+        return;
+      }
       if (this.options && this.currentUl === this.options.length - 1) {
         return;
       }
-      this.$refs[this.currentUl][0].classList.remove("hover");
       //控制滚动
       if (
         this.$refs.scrollDiv.scrollHeight > this.$refs.scrollDiv.clientHeight
       ) {
-        // console.log("ul有滚动条")
+        // // console.log("ul有滚动条")
         // if (this.currentUl > 6) {
         //   this.$refs[this.currentUl - 6][0].scrollIntoView(false);
         // } else {
@@ -293,16 +472,21 @@ export default {
         } else {
         }
       } else {
-        // console.log("ul没有滚动条")
+        // // console.log("ul没有滚动条")
       }
-      this.$refs[this.currentUl + 1][0].classList.add("hover");
-      this.currentUl++;
+      if (this.$refs[this.currentUl + 1][0]) {
+        this.$refs[this.currentUl][0].classList.remove("hover");
+        this.$refs[this.currentUl + 1][0].classList.add("hover");
+        this.currentUl++;
+      }
     },
     deleteSeleted: function(event) {
-      // console.log("按键事件", event);
-      if (event.target.value === "" && this.selectedData) {
+      // // console.log("按键事件", event);
+      if (event.target.value === "" && this.triggerDel && this.selectedData) {
         this.selectedData.pop();
         this.value.pop();
+      } else {
+        this.triggerDel = true;
       }
     },
     //检测li是否应该显示底色
@@ -315,40 +499,68 @@ export default {
       ) {
         result += "active ";
       }
-      if (index === 0) {
-        result += "hover ";
-      }
+      // if (index === 0) {
+      //   result += "hover ";
+      // }
       return result;
     },
     //展示选项
     toggleUl: function(e) {
+      var that = this;
       if (this.showUl === true) {
         this.showUl = false;
         this.downArrow = true;
+        this.triggerEnter = false;
+        e.target.value = "";
+        this.noResult = false;
+        this.searchState = false;
+        window.removeEventListener("scroll", that.scrollListener);
       } else {
-        this.showUl = true;
+        // // console.log(this.$el.children[0].children[0].children[3].tagName+"before")
+        this.triggerEnter = false;
+        e.target.value = "";
+        this.noResult = false;
+        this.searchState = false;
+
+        // this.showUl = true;
         this.currentUl = 0;
         this.downArrow = false;
         this.scrollTop = 0;
-        // input距离顶部距离  屏幕宽度 this.screenHeight-this.divTop
-        // 如果元素超过13个 ul绝对高度 400px
-        if (this.options.length >= 13) {
-          // 如果大于400
 
-          if(document.documentElement.clientHeight-this.divTop<400){
-            this.topDiv = '-400px'
-          }else{
-            this.topDiv = ''
-          }
-        }else{
-          // 按照option 个数来计算高度
-          if(document.documentElement.clientHeight-this.divTop<(400*this.options.length/13)){
-            this.topDiv = -this.options.length*400/13 +"px"
-          }else{
-            this.topDiv = ''
-          }
+        this.divTop = this.$refs.input.getBoundingClientRect().top;
+        let halfHeight = document.documentElement.clientHeight / 2;
 
+        //位于下半部分
+        if (halfHeight - this.divTop <= 0) {
+          this.isUpDown = true;
+          this.fixed = false;
+          this.topDiv = "-400px";
+          if (460 > this.divTop) {
+            this.fixed = true;
+            this.topDiv = "60px";
+          }
+          // setTimeout(() => {
+          //   let dom = that.$refs.scrollDiv;
+          //   let domHeight = dom.offsetHeight;
+          //   //矫正值60，因为顶部高60
+          //   if (domHeight+60 < that.divTop) {
+          //     // this.topDiv = "-410px";
+          //     this.fixed = false;
+          //     that.topDiv = "-" + domHeight + "px";
+          //   } else {
+          //     that.fixed = true;
+          //     that.isUpDown = false;
+          //     that.topDiv = 60 + "px";
+
+          //   }
+          // }, 10);
+        } else {
+          this.fixed = false;
+          this.topDiv = "";
         }
+        this.showUl = true;
+
+        window.addEventListener("scroll", that.scrollListener);
       }
     },
     //点击选项时阻止input的blur事件
@@ -373,7 +585,7 @@ export default {
         }
         // this.$emit("input", this.value);
         if (this.value.length === 0) {
-          // console.log("this.$refs.input", this.$refs.input);
+          // // console.log("this.$refs.input", this.$refs.input);
           this.$refs.input.value = "";
         }
       } else {
@@ -385,22 +597,34 @@ export default {
           }
         }
         classList.add("active");
-        this.selectedData.push(this.options[indexInOptions]);
-        //用于输出
-        this.value.push(
-          this.$options.methods.forOutput(
-            this.options[indexInOptions],
-            this.outputField
-          )
-        );
-        // this.$emit("input", this.value);
+        if (!this.searchState) {
+          this.selectedData.push(this.options[indexInOptions]);
+          //用于输出
+          this.value.push(
+            this.$options.methods.forOutput(
+              this.options[indexInOptions],
+              this.outputField
+            )
+          );
+          // this.$emit("input", this.value);
+        } else {
+          this.selectedData.push(this.searchOptions[indexInOptions]);
+          //用于输出
+          this.value.push(
+            this.$options.methods.forOutput(
+              this.searchOptions[indexInOptions],
+              this.outputField
+            )
+          );
+          // this.$emit("input", this.value);
+        }
       }
     },
     handleInput() {
       this.$refs.input.focus();
     },
     removeSelected: function(event) {
-      // console.log("event", event);
+      // // console.log("event", event);
       const selectedId = event.target.dataset.id;
       this.selectedData = this.selectedData.filter(function(item) {
         return item.id != selectedId;
@@ -437,16 +661,18 @@ export default {
 .ul_box {
   // margin-top: 5px;
   width: auto;
-  border: 1px solid #ccc;
+  border: 2px solid #ccc;
   min-width: 250px;
   max-width: 400px;
   max-height: 400px;
   overflow-y: auto;
   background-color: #fff;
   z-index: 1;
+  border-left: 1px solid #ccc;
+  border-top: 1px solid #ccc;
 }
 .ul_box li {
-  padding: 5px 0 5px 20px;
+  padding: 5px 20px;
   cursor: pointer;
 }
 .ul_box li:hover,

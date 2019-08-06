@@ -1,5 +1,5 @@
 <template>
-  <div class="minute" >
+  <div class="minute">
     <div class="minutecom" v-for="minute in minutes" :key="minute" @click="confirm">{{minute}}</div>
   </div>
 </template>
@@ -12,35 +12,34 @@ export default {
       default: () => {
         return [];
       }
-    },
-
+    }
   },
   methods: {
     confirm(event) {
-      this.$emit("confirm",event)
+      this.$emit("confirm", event); 
     }
   }
 };
 </script>
 
 <style lang="less" scoped>
-.minute{
+.minute {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  position: absolute;
-  background-color:#FFF;
+  // position: absolute;
+  background-color: #fff;
   z-index: 10000000000;
   border: 1px solid darkgray;
-  width:300px;
+  width: 300px;
 }
-.minutecom{
-  width:25%;
+.minutecom {
+  width: 25%;
   cursor: pointer;
-    padding:15px
+  padding: 15px;
 }
-.minutecom:hover{
-  color:skyblue
+.minutecom:hover {
+  color: skyblue;
 }
 </style>
 

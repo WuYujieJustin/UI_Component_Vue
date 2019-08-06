@@ -9,12 +9,9 @@
             :rowName="rowName"
             v-slot:default="treeNode"
             > <slot v-bind:treeNode="unstall(treeNode)"></slot> </tree>
-            
         </ul>
-        
     </li>
 </template>
-
 <script>
 export default {
     name:"tree",

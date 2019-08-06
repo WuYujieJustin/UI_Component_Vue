@@ -21,7 +21,7 @@
     <!-- datetime -->
     <div class="poper" v-if="datetype == `datetime`">
       <i-input-date-picker v-show="isYear" @chooseDate="showHour" />
-      <hour :hours="hours" @showMin="showMin" v-show="isHour" />
+      <hour :hours="hours" @showMin="showMin" v-show="isHour"/>
       <minute :minutes="minutes" :isMin="isMin" @confirm="confirm" v-show="isMin" />
       <today v-show="isYear || isHour || isMin" @chooseToday="chooseToday" />
     </div>
@@ -318,12 +318,19 @@ export default {
       if (this.datetype == "datetime") {
         this.status = "hour";
       }
+      // formate poperstyle
+      this.$nextTick(()=>{
+        this.$emit("poperStyle")
+      })
       // receive value from child
       this.$emit("changeStatus");
       this.tempValue = event.target.timeStr;
     },
     showMin(event) {
-      //format minutes
+      // formatr poperStyle
+      this.$nextTick(()=>{
+        this.$emit("poperStyle")
+      })      //format minutes
       this.minutes = [];
       this.hourPassed = Number(event.target.innerText.slice(0, -3));
 
@@ -461,14 +468,14 @@ export default {
 
 <style lang="less" scoped>
 .datepanel {
-  height: 30px;
+  // height: 30px;
   width: 300px;
 }
 
 .poper {
   width: 300px;
   z-index: 100;
-  position: absolute;
+  // position: absolute;
   background-color: #fff;
   border: 1px solid #CCC
 }

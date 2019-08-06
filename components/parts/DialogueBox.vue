@@ -32,13 +32,14 @@ export default {
         show:Boolean,
         title:{
             type: String,
-            default:"我是一个萌萌哒对话框"
+            default:"对话框"
         }
     },
     methods:{
         close(){
             this.display=false;
             this.reload();
+            this.$emit("close")
         },
         reload(){
             this.keyToReload++;
@@ -58,7 +59,7 @@ export default {
 }
 </script>
 
-<style>
+<style lang="less" scoped>
 .dialogue_bg{
     background-color: black;
     opacity: 0.5;

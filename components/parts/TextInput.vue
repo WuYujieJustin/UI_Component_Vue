@@ -3,7 +3,7 @@
       <!-- v-on:input="transData" -->
 
     <input class="form-control"
-    :style="{'padding-right':icon?'33px':0}"
+      :style="{'padding-right':(icon && icontext)?spanwidth+'px':(icontext?spanwidth+'px':'39px')}"
       type="text"
       v-bind="$attrs"
       v-on="inputListeners"
@@ -11,9 +11,10 @@
       :placeholder="placeholder"
       :readonly="readonly"
       :required="required"
+      ref='input'
     />
-    <span class="i-container">
-    <i v-if="icon || icontext" v-bind:class="'fa ' + icon"  aria-hidden="true">{{icontext}}</i>
+    <span class="i-container" ref="ispan" v-if="icon || icontext" @click="inputfocus">
+    <i  v-bind:class="'fa ' + icon"  aria-hidden="true">{{icontext}}</i>
     </span>
   </div>
 </template>
@@ -22,7 +23,9 @@
 export default {
   inheritAttrs: false,
   data() {
-    return {};
+    return {
+      spanwidth:0,
+    };
   },
   props: {
     value: String,
@@ -57,10 +60,16 @@ export default {
     // console.log(`$listeners:`);
     // console.log(this.$listeners); // 父级添加的所有属性都在这里
     // console.log(this.$listeners.inputListeners.fns); // 
-
+        if(this.$refs.ispan){
+          var dom = this.$refs.ispan
+          this . spanwidth = dom.offsetWidth
+          // console.log("this.$refs.ispan.offsetWidth",dom.offsetWidth)
+        }
   },
   methods: {
-
+    inputfocus(){
+      this.$refs.input.focus()
+    }
   }
 };
 </script>

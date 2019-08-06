@@ -53,7 +53,7 @@ export default {
 .yearTable{
 background:#FFF;
 z-index: 100;
-position: absolute;
+// position: absolute;
 width:300px;
 border: 1px solid #ccc;
 }

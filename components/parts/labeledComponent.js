@@ -19,7 +19,6 @@ export function labelComponent(component, eventName) {
             },
             labelText: {
                 type: String,
-
             },
             labelId: {
                 type: String,
@@ -57,7 +56,7 @@ export function labelComponent(component, eventName) {
                 type: String,
 
             },
-            controlRange: {
+            controlDateRange: {
                 type: Boolean,
 
             },
@@ -103,6 +102,9 @@ export function labelComponent(component, eventName) {
                 type: String,
 
             },
+            controlNumberRange:{
+                type:Boolean
+            }
 
         },
         methods: {
@@ -149,7 +151,7 @@ export function labelComponent(component, eventName) {
                 // 与 `v-bind:style` 的 API 相同，
                 // 接受一个字符串、对象，或对象组成的数组
                 style: {
-                    width: this.controlWidth + 'px',
+                    width: (this.controlWidth || 500) + 'px',
                     // minWidth: "600px"
                 },
             }, [
@@ -158,13 +160,22 @@ export function labelComponent(component, eventName) {
                             // 与 `v-bind:style` 的 API 相同，
                             // 接受一个字符串、对象，或对象组成的数组
                             style: {
-                                width: (this.labelWidth || '90') + 'px',
+                                width: this.labelText?((this.labelWidth || '90') + 'px'):0,
                             },
                             attrs: {
                                 // class: this.labelClass
-                                class: 'control-label'
+                                class: 'control-label',
                             },
-
+                            on:{
+                                click(event){
+                                    // console.log("this.$refs",self.$refs)
+                                    // console.log("self.$refs.component.$refs.input",self.$refs.component.$refs.input)
+                                    self.$refs.component.$refs.input.focus()
+                                },
+                                mousedown(event){
+                                    event.preventDefault();
+                                }
+                            }
                         },
                         [this.labelText]),
                     // h(operator,
@@ -182,6 +193,7 @@ export function labelComponent(component, eventName) {
                     //     }, []),
                     h(component,
                         {
+                            ref:'component',
                             props: {
                                 value: this.options.value,
                                 lists: this.dataSources,
@@ -196,11 +208,12 @@ export function labelComponent(component, eventName) {
                                 width: this.controlWidth,
                                 type: this.controlType,
                                 format: this.controlFormat,
-                                range: this.controlRange,
+                                daterange: this.controlDateRange,
                                 isFormat: this.controlIsgroupseparator,
                                 precision: this.controlPrecision,
                                 icon:this.controlIcon,
-                                icontext:this.controlIcontext
+                                icontext:this.controlIcontext,
+                                numberrange:this.controlNumberRange
                             },
 
                             on: {
@@ -208,22 +221,22 @@ export function labelComponent(component, eventName) {
                                 input: function (data) {
                                     // console.log("self",self)
                                     var data = JSON.parse(JSON.stringify(data))
-                                    // console.log("test",data,typeof(data))
+                                    // console.log("test",data);
                                     // console.log("input事件传到父组件的值",data,typeof(data))
 
-                                    if (Array.isArray(self.options.value) && Array.isArray(data)) {
-                                        if (!self.controlMultiple) {
-                                            self.options.value.pop()
-                                            self.options.value.push(data[0])
-                                        } else {
-                                            for (let i = 0; i < data.length; i++) {
-                                                self.options.value[i] = data[i]
-                                            }
-                                        }
-                                    } else {
-                                        self.options.value = data
-                                    }
-
+                                    // if (Array.isArray(self.options.value) && Array.isArray(data)) {
+                                    //     if (!self.controlMultiple) {
+                                    //         self.options.value.pop()
+                                    //         self.options.value.push(data[0])
+                                    //     } else {
+                                    //         for (let i = 0; i < data.length; i++) {
+                                    //             self.options.value[i] = data[i]
+                                    //         }
+                                    //     }
+                                    // } else {
+                                    //     self.options.value = data
+                                    // }
+                                    self.options.value = data
                                 },
                             }
                         }, [])

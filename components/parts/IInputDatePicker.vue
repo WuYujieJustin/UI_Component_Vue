@@ -23,7 +23,7 @@
     >
       <tbody>
         <tr>
-          <td class="weeks" v-for="(week, key) in WEEKS" :key="key">{{week}}</td>
+          <th disabled class="weeks" v-for="(week, key) in WEEKS" :key="key">{{week}}</th>
         </tr>
         <tr v-for="(row, key) in rows" :class="{ current: isWeekActive(row[1]) }" :key="key">
           <td
@@ -74,7 +74,7 @@ const getDateTimestamp = function(time) {
 };
 export default {
   // provided by the ancestor
-  inject: ["isRequired"],
+  // inject: ["isRequired"],
   components: {
     yearTable,
     monthTable
@@ -82,11 +82,11 @@ export default {
   methods: {
     popYear(event) {
       this.yearVisible = !this.yearVisible;
-      this.monthVisible = false
+      this.monthVisible = false;
     },
     popMonth() {
       this.monthVisible = !this.monthVisible;
-      this.yearVisible = false
+      this.yearVisible = false;
     },
     closeMonth() {
       let times = Number(event.target.innerText) - (this.month + 1);
@@ -100,7 +100,7 @@ export default {
         }
       }
       this.monthVisible = false;
-      this.yearVisible = false
+      this.yearVisible = false;
     },
     closeYear(event) {
       // change this.date to change year
@@ -116,7 +116,7 @@ export default {
         }
       }
       this.yearVisible = false;
-      this.monthVisible = false
+      this.monthVisible = false;
     },
     chooseDate(cell) {
       if (cell.type == "prev-month") {
@@ -585,7 +585,7 @@ export default {
 }
 button {
   background: #fff;
-  border:none
+  border: none;
 }
 table {
   width: 300px;
@@ -605,6 +605,11 @@ td {
 }
 .datepicker {
   width: 300px;
+  background: #fff;
+  border: 1px solid #cccccc
+}
+th {
+  text-align: center;
 }
 </style>
 

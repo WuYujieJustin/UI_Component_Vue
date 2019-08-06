@@ -1,56 +1,19 @@
 # Listview
 这是一个表格组件。
 通过拖动标题行，可以更改数据列的显示顺序。
-暂不支持“操作列”（最后一列）的拖动。
 ## 参数
 
 |参数名称   |是否必需   |数据类型   |说明       |默认           |
 |-----------|-----------|-----------|-----------|-----------|
-|data       |是         |Array      |表格中要显示的数据|        |
-|title      |是         |Array      |字段名到文字的映射|        |
+|data       |是         |Array(Listview.json)|表格中要显示的数据|        |
 |multiSelect|否         |Boolean    |是否多选         |false    |
 |checkBox   |否         |Boolean    |是否显示框       |false    |
 |displayId  |否         |Boolean    |是否显示序号     |false    |
-|refresh    |否         |Boolean    |是否显示刷新按钮  |false   |
-|excel      |否         |Boolean    |是否显示excel按钮|false    |
 |limit      |否         |Number     |每页的条目数     |0        |
 
 
 ### data
-必需。一个对象数组，表格中要显示的数据。数组中的对象中有哪些内容无强制规定，但要确保所有对象的格式一致。
-
-如：
-
-```json
-    foods:[
-        {id:1,name:"羊肉串",price:10,type:"中",taste:"孜然"},
-        {id:2,name:"奥尔良烤翅",price:12,type:"中",taste:"无"},
-        {id:3,name:"土豆泥",price:5,type:"大",taste:"无"},
-        {id:4,name:"鸡排",price:15,type:"大",taste:"麻辣"},
-        {id:5,name:"超级至尊披萨",price:50,type:"中",taste:"无"},
-        {id:6,name:"布丁奶茶",price:22,type:"大",taste:"正常甜度"},
-        {id:7,name:"海鲜意面",price:32,type:"大",taste:"无"},
-        {id:8,name:"香辣鸡腿堡",price:15,type:"中",taste:"无"},
-    ]
-```
-
-### title
-必须。一个对象数组，表示要显示的字段、字段显示顺序以及字段名到文字的映射。
-该数组的每个元素都有key、title这两个键。
-key表示data中的字段名；
-title表示字段名到文字的映射。 
-
-例：
-
-```json
-    title:[
-        {key:'id',title:"序号"},
-        {key:"name",title:"名称"},
-        {key:"price",title:"价格"},
-        {key:"type",title:"规格"},
-        {key:"taste",title:"口味"},
-    ],
-```
+必需。一个对象数组，表格中要显示的数据。格式如同listview。
 
 ### multiSelect
 可选。是否多选。true为多选，false为单选。
@@ -59,10 +22,7 @@ title表示字段名到文字的映射。
 可选。是否显示框。
 ### displayId
 可选。是否显示序号。
-### refresh
-可选。是否显示刷新按钮。
-### excel
-可选。是否显示excel按钮。
+
 ### limit
 可选。每页的条目数。当不添加此参数或值设置为0时表示不分页。
 
@@ -70,59 +30,205 @@ title表示字段名到文字的映射。
 
 ```vue
     <template>
-        <div>
-            <h1>QAQ</h1>
-            <Listview
-                :data="foods"
-                :title="title"
-                :displayId="true"
-                :checkBox="true"
-                :multiSelect="true"
-                :limit="5"
-                :excel="true"
-               v-model="TAT"
-                @select="test"
-            />
-            {{TAT}}
+        <div id="TAT">
+            <div><h1>把它挤下来</h1></div>
+            <Listview :value="json[0]"
+            :limit="2"
+            :multiSelect="true"
+            :checkBox="true"
+            :displayId="true"/>
+
         </div>
     </template>
     <script>
-    import Listview from "~/components/parts/ListView.vue"
+    import Listview from "~/components/parts/Listview.vue"
 
     export default {
         components: {
-            Listview
-        },
-        methods:{
-            test(v){
-                console.log("事件被触发")
-                console.log("什么鬼"+v)
-                console.log(v)
-            }
+            Listview,
         },
         data() {
             return {
-                TAT:[],
-                title:[
-                    {key:'id',title:"序号"},
-                    {key:"name",title:"名称"},
-                    {key:"price",title:"价格"},
-                    {key:"type",title:"规格"},
-                    {key:"taste",title:"口味"},
-                ],
-                foods:[
-                    {id:1,name:"羊肉串",price:10,type:"中",taste:"孜然"},
-                    {id:2,name:"奥尔良烤翅",price:12,type:"中",taste:"无"},
-                    {id:3,name:"土豆泥",price:5,type:"大",taste:"无"},
-                    {id:4,name:"鸡排",price:15,type:"大",taste:"麻辣"},
-                    {id:5,name:"超级至尊披萨",price:50,type:"中",taste:"无"},
-                    {id:6,name:"布丁奶茶",price:22,type:"大",taste:"正常甜度"},
-                    {id:7,name:"海鲜意面",price:32,type:"大",taste:"无"},
-                    {id:8,name:"香辣鸡腿堡",price:15,type:"中",taste:"无"},
-                ],
-            
+                json:[
+                    {
+                        "query": [
+                            {
+                                "id": "OrderBillCode",
+                                "name": "业务编号",
+                                "orderindex": 0,
+                                "control": "textbox",
+                                "defalutvalue": ""
+                            },
+                            {
+                                "id": "ETD",
+                                "name": "业务日期",
+                                "orderindex": 1,
+                                "control": "datebox",
+                                "defalutvalue": {
+                                    "from": "2019-08-23",
+                                    "to": "2019-09-23"
+                                }
+                            },
+                            {
+                                "id": "Qty",
+                                "name": "件数",
+                                "orderindex": 2,
+                                "control": "numberbox",
+                                "defalutvalue": {
+                                    "from": 0,
+                                    "to": 100
+                                }
+                            }
+                        ],
+                        "head": [
+                            {
+                                "id": "id",
+                                "name": "ID",
+                                "orderindex": 0,
+                                "width": "50px",
+                                "class": "",
+                                "align": "left",
+                                "required": true,
+                                "isTotal": false,
+                                "isSelTotal": false,
+                                "jsFun": ""
+                            },
+                            {
+                                "id": "OrderBillCode",
+                                "name": "业务编号",
+                                "orderindex": 1,
+                                "width": "200px",
+                                "class": "",
+                                "align": "left",
+                                "required": false,
+                                "isTotal": false,
+                                "isSelTotal": false,
+                                "jsFun": ""
+                            },
+                            {
+                                "id": "CustomerName",
+                                "name": "客户名称",
+                                "orderindex": 2,
+                                "width": "200px",
+                                "class": "",
+                                "align": "left",
+                                "required": false,
+                                "isTotal": false,
+                                "isSelTotal": false,
+                                "jsFun": ""
+                            },
+                            {
+                                "id": "Qty",
+                                "name": "件数",
+                                "orderindex": 3,
+                                "width": "200px",
+                                "class": "",
+                                "align": "right",
+                                "required": false,
+                                "isTotal": true,
+                                "isSelTotal": true,
+                                "jsFun": ""
+                            },
+                            {
+                                "id": "ETD",
+                                "name": "业务日期",
+                                "orderindex": 4,
+                                "width": "200px",
+                                "class": "",
+                                "align": "right",
+                                "required": false,
+                                "isTotal": false,
+                                "isSelTotal": false,
+                                "jsFun": ""
+                            }
+                        ],
+                        "data": [
+                            {
+                                "id": 12306,
+                                "OrderBillCode": "TTKJSEH19070003",
+                                "CustomerName": "中国铁路总公司",
+                                "Qty": 100,
+                                "Address": "北京市海淀区",
+                                "Contact": "传真",
+                                "ETD": "2019-07-19"
+                            },
+                            {
+                                "id": 12315,
+                                "OrderBillCode": "TTKJSEH19070003",
+                                "CustomerName": "消费者投诉热线",
+                                "Qty": 100,
+                                "Address": "上海市杨浦区",
+                                "Contact": "email",
+                                "ETD": "2019-07-19"
+                            },
+                            {
+                                "id": 12345,
+                                "OrderBillCode": "TTKJSEH19070002",
+                                "CustomerName": "上海钛腾计算机科技有限公司",
+                                "Qty": 50,
+                                "Address": "上海市宝山区上大路2999弄9号楼3楼",
+                                "Contact": "QQ",
+                                "ETD": "2019-07-18"
+                            },
+                            {
+                                "id": 12346,
+                                "OrderBillCode": "TTKJSEH19070003",
+                                "CustomerName": "上海铁集物流供应链有限公司",
+                                "Qty": 100,
+                                "Address": "上海市杨浦区",
+                                "Contact": "MM",
+                                "ETD": "2019-07-19"
+                            },
+                            {
+                                "id": 12377,
+                                "OrderBillCode": "TTKJSEH19070003",
+                                "CustomerName": "上海铁集物流供应链有限公司",
+                                "Qty": 100,
+                                "Address": "上海市杨浦区",
+                                "Contact": "tel",
+                                "ETD": "2019-07-19"
+                            },
+                        ],
+                        "button": [
+                            {
+                                "id": "new",
+                                "name": "新增",
+                                "icon": "fa-plus",
+                                "display": true,
+                                "disabled": false,
+                                "align": "right",
+                                "function": "DoNew()"
+                            },
+                            {
+                                "id": "edit",
+                                "name": "修改",
+                                "icon": "fa-edit",
+                                "display": true,
+                                "disabled": true,
+                                "align": "right",
+                                "function": "DoEdit()"
+                            }
+                        ],
+                        "pagination": true,
+                        "pagesize": 1000,
+                        "pagenumber": 1,
+                        "pagelist": [
+                            1000,
+                            2000,
+                            5000,
+                            10000
+                        ],
+                        "checkbox":true
+                    }
+                ]
             }
         },
     }
     </script>
+    <style>
+    #TAT{
+        margin: 50px;
+    }
+    </style>
+
 ```

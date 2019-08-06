@@ -1,18 +1,21 @@
 <template>
-  <div class="example"
-   
-  >
+  <div class="example" ref="totalWidth">
     <input
-      :value="this.value"
+      ref="input"
+      :value="pickerValue"
       v-on="inputListeners"
-      @click="showTime"
+      @focus="showTime"
       class="form-control"
-      @blur="changeBlur"
       :required="required"
       :placeholder="placeholder"
-       :style="{'padding-right':icon?'23px':0}"
+      @blur="changeBlur"
     />
-    <div class="datepicker" v-show="status">
+    <div
+      class="datepicker"
+      ref="datepicker"
+      v-show="status"
+      :style="{'position':'fixed','top':position+'px'}"
+    >
       <date-panel
         ref="datePanel"
         :hours="hours"
@@ -20,30 +23,33 @@
         :format="format"
         :type="type"
         :isYearProp="isYearProp"
+        @poperStyle="updatePosition"
       />
       <date-panel
         ref="datePanelRange"
-        v-if="range"
+        v-if="daterange"
         :hours="hours"
         @confirm="secondconfirm"
         :format="format"
         :type="type"
         :isYearProp="isYearProp"
+        @poperStyle="updatePosition"
       />
     </div>
-    <span class="i-container">
-
-    <i v-if="icon || icontext" v-bind:class="'fa ' + icon"  aria-hidden="true">{{icontext}}</i>
+    <span
+      class="i-container"
+      ref="ispan"
+      v-if="icon || icontext"
+      @click="inputfocus"
+      v-on:mousedown="dateMousedown"
+    >
+      <i v-bind:class="'fa ' + icon" aria-hidden="true">{{icontext}}</i>
     </span>
-
   </div>
 </template>
 
 <script>
 import datePanel from "~/components/parts/datePanel.vue";
-// window.onClick = function(){
-//   console.log("??????????????????")
-// }
 export default {
   inheritAttrs: false,
   computed: {
@@ -59,7 +65,8 @@ export default {
         {
           // 这里确保组件配合 `v-model` 的工作
           input: function(event) {
-            vm.$emit("input", event.target.value);
+            vm.$emit("input", [event.target.value])
+            vm.pickerValue = event.target.value
           }
         }
       );
@@ -72,6 +79,7 @@ export default {
   },
   data() {
     return {
+      spanwidth: 0,
       hours: [],
       minutes: [],
       datetype: this.type,
@@ -81,7 +89,13 @@ export default {
       btnvisibleprop: false,
       isYearProp: false,
       pickerValue: this.value,
-      status: false
+      status: false,
+      position: 0,
+      poperHeight: 0,
+      inputHeight: 0,
+      inputTop: 0,
+      totalHeight: 0,
+      inputBottom: 0
     };
   },
   components: {
@@ -105,13 +119,13 @@ export default {
       default: "fa-calendar"
     },
     icontext: {
-      type: String,
+      type: String
     },
     value: {
-      type: String,
-      default: ""
+      type: [Array, String],
+      default: []
     },
-    range: {
+    daterange: {
       type: Boolean,
       default: false
     },
@@ -123,36 +137,116 @@ export default {
       type: String
     }
   },
+  mounted() {
+    // input height
+    window.addEventListener("scroll", this.updatePosition);
+    this.inputHeight = this.$refs.input.offsetHeight;
+    this.inputTop = this.$refs.totalWidth.getBoundingClientRect().top;
+    this.totalHeight = window.innerHeight;
+    this.inputBottom = this.totalHeight - this.inputTop;
+    if (this.$refs.ispan) {
+      var dom = this.$refs.ispan;
+      this.spanwidth = dom.offsetWidth;
+    }
+    if (this.$refs.input && this.$refs.totalWidth) {
+      let totalWidth = this.$refs.totalWidth.offsetWidth;
+
+      this.$refs.input.style.width = totalWidth - this.spanwidth + "px";
+    }
+  },
   methods: {
+    updatePosition() {
+      this.$nextTick(() => {
+        //assign value
+        this.inputTop = this.$refs.totalWidth.getBoundingClientRect().top;
+        this.totalHeight = window.innerHeight;
+        this.inputBottom = this.totalHeight - this.inputTop;
+        this.poperHeight = this.$refs.datepicker.offsetHeight;
+        // console.log(
+        //   this.poperHeight +
+        //     "this.poperHeight = this.$refs.datepicker.style.width;"
+        // );
+
+        // poper up
+        // 上方够下方不够 定位在上方
+        if (
+          this.poperHeight > this.inputBottom &&
+          this.poperHeight < this.inputTop
+        ) {
+          // console.log("上方够下方不够 定位在input上方 datetime");
+          // console.log(this.poperHeight + "this.poperHeight");
+          // console.log(this.$refs.datepicker);
+          this.position = this.inputTop - this.poperHeight;
+        }
+        //上下均不够 定位在底部 bottom 0
+        if (
+          this.poperHeight > this.inputBottom &&
+          this.poperHeight > this.inputTop
+        ) {
+          // console.log("上下均不够 定位在底部 bottom 0");
+          this.position = this.totalHeight - this.poperHeight;
+        }
+        //只要下方空间够 定位在input下方
+        if (this.poperHeight < this.inputBottom) {
+          this.position = this.inputTop + this.inputHeight;
+          // console.log("只要下方空间够 定位在input下方");
+        }
+      });
+    },
+    //点击选项时阻止input的blur事件
+    dateMousedown: function(event) {
+      event.preventDefault();
+    },
+    inputfocus() {
+      this.$refs.input.focus();
+    },
     changeBlur() {
       this.status = false;
+      window.removeEventListener("scroll", this.updatePosition);
     },
     firstconfirm(str) {
       this.pickerValue = str;
-      this.$emit("input", str);
+      this.$emit("input", [str]);
       this.$refs.datePanel.status = null;
-      if (this.range) {
+      if (this.daterange) {
         this.$refs.datePanel.status = "year";
       } else {
         this.status = false;
       }
     },
     secondconfirm(str) {
-      // if second value exits delete
-      if (this.pickerValue.indexOf(" 到 ")) {
-        this.pickerValue = this.pickerValue.split("到")[0];
+      //if second value exits delete
+      if (this.pickerValue.indexOf("--") > -1) {
+        this.pickerValue = this.pickerValue.split("--")[0];
       }
-      this.pickerValue = this.pickerValue + "到" + str;
-
-      this.$emit("input", this.pickerValue);
+      this.pickerValue = this.pickerValue + "--" + str;
+      // console.log(this.pickerValue);
+      // emit array
+      this.$emit("input", this.pickerValue.split("--"));
       this.$refs.datePanel.status = this.$refs.datePanelRange.status = null;
       this.status = false;
     },
     showTime() {
       this.status = !this.status;
+      // position:
+      // this.inputHeight = this.$refs.input.offsetHeight;
+      // this.inputTop = this.$refs.totalWidth.getBoundingClientRect().top;
+      // this.totalHeight = window.innerHeight;
+      // this.inputBottom = this.totalHeight - this.inputTop;
+      // init position by click
+
+      // console.log("true" + this.status);
+      //如果在可视区域内 没有滚动页面 先初始化
+      if (this.status) {
+        window.addEventListener("scroll", this.updatePosition);
+        if (this.inputTop < this.totalHeight) {
+          this.$nextTick(this.updatePosition);
+        }
+      }
+
       if (this.datetype == "month") {
         this.$refs.datePanel.status = "year";
-        if (this.range) {
+        if (this.daterange) {
           this.$refs.datePanel.status = "year";
         }
       }
@@ -164,7 +258,7 @@ export default {
           this.hours.push(i + ":00");
         }
         this.$refs.datePanel.status = "year";
-        if (this.range) {
+        if (this.daterange) {
           this.$refs.datePanelRange.status = "year";
         }
       }
@@ -172,7 +266,7 @@ export default {
       // only one layer use boolean type
       if (this.datetype == "year" || this.datetype == "date") {
         this.$refs.datePanel.status = "year";
-        if (this.range) {
+        if (this.daterange) {
           this.$refs.datePanelRange.status = "year";
         }
       }
@@ -186,7 +280,7 @@ export default {
           this.hours.push(i + ":00");
         }
         this.$refs.datePanel.status = "hour";
-        if (this.range) {
+        if (this.daterange) {
           this.$refs.datePanelRange.status = "year";
         }
       }
@@ -200,7 +294,7 @@ export default {
 .datepicker {
   display: flex;
   position: absolute;
-  z-index: 100;
+  z-index: 100000;
 }
 </style>
 
