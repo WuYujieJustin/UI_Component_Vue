@@ -81,7 +81,7 @@ export default {
 }
 .dialogue_body{
     background-color: #f0f0f0;
-    width: 80%;
+    width: 60%;
     z-index: 12377;
     border: 1px solid #ccc;
     border-radius:5px;
@@ -93,6 +93,6 @@ export default {
     padding: 15px;
 }
 .dialogue_body section{
-    padding: 15px;
+    padding: 30px;
 }
 </style>

@@ -32,8 +32,8 @@
             type="text"
             ref="input"
             :style="{'width':(selectedData.length>0?(inputwidth+'px'):'100%'),'padding-right':selectedData.length===0?spanwidth+'px':0}"
-            v-on:focus="toggleUl"
-            v-on:blur="toggleUl"
+            v-on:focus="inputFocus"
+            v-on:blur="inputBlur"
             v-on:keyup.up="up"
             v-on:keyup.down="down"
             v-on:keydown.enter="enterPreventDefault"
@@ -41,6 +41,7 @@
             v-on:keyup.backspace="deleteSeleted"
             :placeholder="placeholder"
             v-on:input="input"
+            v-on:mousedown="inputMousedown"
             :required="selectedData.length>0?false:required"
           />
         </div>
@@ -69,7 +70,7 @@
             :data-id="option.id"
             :data-index="index"
             :class="hasClass(option.id,index)"
-          >{{option.text}}</li>
+          >{{option.text ? option.text :option.name}}</li>
         </ul>
         <ul
           class="ul_box"
@@ -89,7 +90,7 @@
             :data-id="option.id"
             :data-index="index"
             :class="hasClass(option.id,index)"
-          >{{option.text}}</li>
+          >{{option.text ? option.text :option.name}}</li>
         </ul>
         <ul
           class="ul_box"
@@ -109,6 +110,7 @@
 export default {
   data() {
     return {
+      searchTimeOutFlag: 0,
       fixed: false,
       clickPix: 0,
       divTop: 0,
@@ -151,7 +153,7 @@ export default {
     },
     //组件传出的数据
     value: {
-      type: Array
+      type: [Array, Number]
     },
     //传入的label文本内容
     label: {
@@ -185,37 +187,52 @@ export default {
     }
   },
 
-  computed: {
-    // divTop() {
-    //   return this.$refs.input.getBoundingClientRect().top;
-    // },
-    zeroIndex() {
-      return;
-    }
-  },
+  computed: {},
   mounted: function() {
-    // // console.log("数据挂载执行完毕，打印value", this.value);
-    if (
-      this.options &&
-      this.options.length > 0 &&
-      this.value &&
-      this.value.length > 0 &&
-      this.selectedData &&
-      this.selectedData.length == 0
-    ) {
-      //数据已经挂载，外部传入value（选中的信息），将对应value显示出来
-      // // console.log("该自动选中列表咯");
-      var that = this;
-      that.value.forEach(function(num) {
-        that.options.forEach(function(obj, index) {
+    var that = this;
+    // console.log("this.value", this.value);
+    // console.log("this.multi", this.multi);
+    if (!this.multi) {
+      // // console.log("数据挂载执行完毕，打印value", this.value);
+      if (
+        this.options &&
+        this.options.length > 0 &&
+        this.value &&
+        this.selectedData &&
+        this.selectedData.length == 0
+      ) {
+        //数据已经挂载，外部传入value（选中的信息），将对应value显示出来
+        // // console.log("该自动选中列表咯");
+        let num = this.value;
+        // console.log("num", num);
+        this.options.forEach(function(obj, index) {
           if (obj.id == num) {
-            // // console.log("obj", obj);
+            // console.log("obj", obj);
             that.selectedData.push(obj);
           }
         });
-      });
+      }
+      // // console.log("this.$refs",this.$refs)
+    } else {
+      if (
+        this.options &&
+        this.options.length > 0 &&
+        this.value &&
+        this.value.length > 0 &&
+        this.selectedData &&
+        this.selectedData.length == 0
+      ) {
+        this.value.forEach(function(num) {
+          that.options.forEach(function(obj, index) {
+            if (obj.id == num) {
+              // console.log("multi num", num);
+              // console.log("obj", obj);
+              that.selectedData.push(obj);
+            }
+          });
+        });
+      }
     }
-    // // console.log("this.$refs",this.$refs)
   },
   updated() {
     var that = this;
@@ -297,9 +314,85 @@ export default {
         // }
       }
     },
+
     input: function(event) {
-      this.triggerDel = false;
-      this.triggerEnter = false;
+      if (this.triggerDel) {
+        this.triggerDel = false;
+      }
+      if (this.triggerEnter) {
+        this.triggerEnter = false;
+      }
+      // console.log(event);
+      if (!this.showUl) {
+        this.showUl = true;
+      }
+      //定义延时搜索
+      let that = this;
+      let timout = setTimeout(() => {
+        that.noResult = false;
+        let searchString = "";
+        if (event.target.value.length > 0) {
+          searchString = event.target.value.trim().toLowerCase();
+          event.target.value = searchString;
+        } else {
+          that.searchOptions = [];
+          that.searchState = false;
+        }
+        if (searchString) {
+          that.searchOptions = that.options;
+          that.searchOptions = that.searchOptions.filter(function(obj) {
+            // let keys = Object.keys(obj);
+            let keys = "text";
+
+            // for (let i = 0; i < keys.length; i++) {
+            //   let key = keys[i];
+            if (
+              obj[keys] &&
+              obj[keys]
+                .toString()
+                .toLowerCase()
+                .indexOf(searchString) !== -1
+            ) {
+              return obj;
+            }
+            keys = "name";
+            if (
+              obj[keys] &&
+              obj[keys]
+                .toString()
+                .toLowerCase()
+                .indexOf(searchString) !== -1
+            ) {
+              return obj;
+            }
+            // }
+          });
+          that.searchState = true;
+          that.currentUl = 0;
+          if (that.searchOptions.length === 0) {
+            //若搜索结果为空，清除输入文本，提示无搜索结果，延时1s后显示所有选项
+            that.noResult = true;
+            event.target.value = "";
+            setTimeout(() => {
+              that.searchOptions = that.options;
+              that.noResult = false;
+            }, 1000);
+          } else {
+            that.triggerEnter = true;
+          }
+        } else {
+          that.searchState = false;
+        }
+        that.scrollListener();
+      }, 1000);
+
+      //执行或清除延时搜索
+      if (this.searchTimeOutFlag == 0) {
+        this.searchTimeOutFlag = timout;
+      } else {
+        clearTimeout(this.searchTimeOutFlag);
+        this.searchTimeOutFlag = timout;
+      }
     },
     inputfocus() {
       this.$refs.input.focus();
@@ -343,7 +436,7 @@ export default {
       for (let i = 0; i < arr.length; i++) {
         if (arr[i] in obj) {
           showStr = obj[arr[i]];
-          break;
+          return showStr;
         }
       }
       showStr = obj.text;
@@ -357,62 +450,35 @@ export default {
     },
     enter: function(event) {
       event.preventDefault();
-      if (this.triggerEnter === true && this.noResult === false) {
-        event.target.value = event.target.value.replace(/\s+/g, "");
+      if (
+        this.triggerEnter === true &&
+        this.noResult === false &&
+        this.showUl
+      ) {
+        this.$refs.input.value = this.$refs.input.value.replace(/\s+/g, "");
         let id = this.$refs[this.currentUl][0].dataset.id;
         // // console.log("this.currentUl", this.currentUl);
         // this.$options.methods.trClick(id,this.currentUl)
         this.ulClick(id, this.currentUl);
       } else {
-        this.noResult = false;
-        let searchString = "";
-        if (event.target.value.length > 0) {
-          searchString = event.target.value.trim().toLowerCase();
-          event.target.value = searchString;
-        } else {
-          this.searchOptions = [];
-          this.searchState = false;
-        }
-        if (searchString) {
-          this.searchOptions = this.options;
-          this.searchOptions = this.searchOptions.filter(function(obj) {
-            let keys = Object.keys(obj);
-            for (let i = 0; i < keys.length; i++) {
-              let key = keys[i];
-              if (
-                obj[key]
-                  .toString()
-                  .toLowerCase()
-                  .indexOf(searchString) !== -1
-              ) {
-                return obj;
-              }
-            }
-          });
-          this.searchState = true;
-          this.currentUl = 0;
-          if (this.searchOptions.length === 0) {
-            this.noResult = true;
-            event.target.value = "";
-          }
-        } else {
-          this.searchState = false;
-        }
-
-        let that = this;
-        if (this.isUpDown) {
-          setTimeout(() => {
-            let dom1 = that.$refs.scrollDiv;
-            console.log("scrollDiv", dom1.offsetHeight);
-            that.topDiv = "-" + dom1.offsetHeight + "px";
-          }, 10);
+        //单选 enter特殊处理
+        if (!this.multi && !this.triggerEnter && this.showUl) {
+          this.showUl = false;
+          //敲击回车时若未激活回车选择功能，且panel是展开的，就关闭panel
+          // if (this.showUl) {
+          //   this.showUl = false;
+          // }
+        } else if (!this.multi && !this.triggerEnter && !this.showUl) {
+          this.inputFocus();
         }
       }
     },
     up: function(event) {
+      if (!this.showUl) {
+        return;
+      }
       event.preventDefault();
       this.triggerEnter = true;
-
       if (this.currentUl === 0) {
         if (this.$refs[this.currentUl][0]) {
           this.$refs[this.currentUl][0].classList.add("hover");
@@ -445,6 +511,9 @@ export default {
       }
     },
     down: function(event) {
+      if (!this.showUl) {
+        return;
+      }
       event.preventDefault();
       // // console.log("按下键", event);
       if (this.currentUl === 0 && this.triggerEnter === false) {
@@ -467,7 +536,7 @@ export default {
         // } else {
         //   this.$refs[0][0].scrollIntoView(false);
         // }
-        if (this.currentUl > 8) {
+        if (this.currentUl > 4) {
           this.$refs[this.currentUl + 1][0].scrollIntoView(false);
         } else {
         }
@@ -483,8 +552,13 @@ export default {
     deleteSeleted: function(event) {
       // // console.log("按键事件", event);
       if (event.target.value === "" && this.triggerDel && this.selectedData) {
-        this.selectedData.pop();
-        this.value.pop();
+        if (!this.multi) {
+          this.selectedData = [];
+          this.$emit("input", null);
+        } else {
+          this.selectedData.pop();
+          this.value.pop();
+        }
       } else {
         this.triggerDel = true;
       }
@@ -499,9 +573,9 @@ export default {
       ) {
         result += "active ";
       }
-      // if (index === 0) {
-      //   result += "hover ";
-      // }
+      if (!this.noResult && this.triggerEnter && index === 0) {
+        result += "hover ";
+      }
       return result;
     },
     //展示选项
@@ -511,61 +585,91 @@ export default {
         this.showUl = false;
         this.downArrow = true;
         this.triggerEnter = false;
-        e.target.value = "";
+        //失焦后清除input内的文本
+        this.$refs.input.value = "";
         this.noResult = false;
         this.searchState = false;
         window.removeEventListener("scroll", that.scrollListener);
       } else {
-        // // console.log(this.$el.children[0].children[0].children[3].tagName+"before")
         this.triggerEnter = false;
-        e.target.value = "";
         this.noResult = false;
         this.searchState = false;
-
-        // this.showUl = true;
         this.currentUl = 0;
         this.downArrow = false;
         this.scrollTop = 0;
-
         this.divTop = this.$refs.input.getBoundingClientRect().top;
         let halfHeight = document.documentElement.clientHeight / 2;
-
         //位于下半部分
         if (halfHeight - this.divTop <= 0) {
           this.isUpDown = true;
           this.fixed = false;
-          this.topDiv = "-400px";
-          if (460 > this.divTop) {
+          this.topDiv = "-250px";
+          if (310 > this.divTop) {
             this.fixed = true;
             this.topDiv = "60px";
           }
-          // setTimeout(() => {
-          //   let dom = that.$refs.scrollDiv;
-          //   let domHeight = dom.offsetHeight;
-          //   //矫正值60，因为顶部高60
-          //   if (domHeight+60 < that.divTop) {
-          //     // this.topDiv = "-410px";
-          //     this.fixed = false;
-          //     that.topDiv = "-" + domHeight + "px";
-          //   } else {
-          //     that.fixed = true;
-          //     that.isUpDown = false;
-          //     that.topDiv = 60 + "px";
-
-          //   }
-          // }, 10);
         } else {
           this.fixed = false;
           this.topDiv = "";
         }
         this.showUl = true;
-
         window.addEventListener("scroll", that.scrollListener);
       }
+    },
+
+    inputFocus(event) {
+      let that = this;
+      this.triggerEnter = false;
+      this.noResult = false;
+      this.searchState = false;
+      this.currentUl = 0;
+      this.downArrow = false;
+      this.scrollTop = 0;
+      this.divTop = this.$refs.input.getBoundingClientRect().top;
+      let halfHeight = document.documentElement.clientHeight / 2;
+      //位于下半部分
+      if (halfHeight - this.divTop <= 0) {
+        this.isUpDown = true;
+        this.fixed = false;
+        this.topDiv = "-250px";
+        if (310 > this.divTop) {
+          this.fixed = true;
+          this.topDiv = "60px";
+        }
+      } else {
+        this.fixed = false;
+        this.topDiv = "";
+      }
+      this.showUl = true;
+      window.addEventListener("scroll", that.scrollListener);
+    },
+    //input 失焦
+    inputBlur(event) {
+      let that = this;
+      if (this.showUl === true) {
+        this.showUl = false;
+      } else {
+        this.$refs.input.blur();
+      }
+      this.downArrow = true;
+      this.triggerEnter = false;
+      //失焦后清除input内的文本
+      event.target.value = "";
+      // this.$refs.input.value = "";
+      this.noResult = false;
+      this.searchState = false;
+      window.removeEventListener("scroll", that.scrollListener);
     },
     //点击选项时阻止input的blur事件
     ulMousedown: function(event) {
       event.preventDefault();
+    },
+    //单选状态下，panel关闭状态下，点击input时，重新触发focus
+    inputMousedown: function(event) {
+      event.preventDefault();
+      if (!this.multi && !this.showUl) {
+        this.inputFocus();
+      }
     },
     //选项的点击事件
     ulClick: function(id, index) {
@@ -579,45 +683,64 @@ export default {
         this.selectedData = this.selectedData.filter(function(item) {
           return item.id != selectedId;
         });
-        let indexInValue = this.value.indexOf(selectedId * 1);
-        if (indexInValue != -1) {
-          this.value.splice(indexInValue, 1);
+        if (this.multi) {
+          let indexInValue = this.value.indexOf(selectedId * 1);
+          if (indexInValue != -1) {
+            this.value.splice(indexInValue, 1);
+          }
+        } else {
+          this.$emit("input", null);
         }
-        // this.$emit("input", this.value);
-        if (this.value.length === 0) {
-          // // console.log("this.$refs.input", this.$refs.input);
-          this.$refs.input.value = "";
-        }
+        // if (this.value.length === 0) {
+        //   // console.log("this.$refs.input", this.$refs.input);
+        //   this.$refs.input.value = "";
+        // }
       } else {
-        //如果单选模式
+        // 如果单选模式;
         if (!this.multi) {
           this.selectedData = [];
-          while (this.value && this.value.length > 0) {
-            this.value.pop();
-          }
         }
         classList.add("active");
         if (!this.searchState) {
           this.selectedData.push(this.options[indexInOptions]);
           //用于输出
-          this.value.push(
-            this.$options.methods.forOutput(
+          if (!this.multi) {
+            let value = this.$options.methods.forOutput(
               this.options[indexInOptions],
               this.outputField
-            )
-          );
-          // this.$emit("input", this.value);
+            );
+            this.$emit("input", value);
+          } else {
+            this.value.push(
+              this.$options.methods.forOutput(
+                this.options[indexInOptions],
+                this.outputField
+              )
+            );
+          }
         } else {
           this.selectedData.push(this.searchOptions[indexInOptions]);
           //用于输出
-          this.value.push(
-            this.$options.methods.forOutput(
+          if (!this.multi) {
+            let value = this.$options.methods.forOutput(
               this.searchOptions[indexInOptions],
               this.outputField
-            )
-          );
-          // this.$emit("input", this.value);
+            );
+            this.$emit("input", value);
+          } else {
+            this.value.push(
+              this.$options.methods.forOutput(
+                this.searchOptions[indexInOptions],
+                this.outputField
+              )
+            );
+          }
         }
+      }
+      if (!this.multi) {
+        this.triggerEnter = false;
+        this.showUl = false;
+        this.$refs.input.value = "";
       }
     },
     handleInput() {
@@ -629,14 +752,14 @@ export default {
       this.selectedData = this.selectedData.filter(function(item) {
         return item.id != selectedId;
       });
-      let index = this.value.indexOf(selectedId * 1);
-      if (index != -1) {
-        this.value.splice(index, 1);
+      if (!this.multi) {
+        this.$emit("input", null);
+      } else {
+        let index = this.value.indexOf(selectedId * 1);
+        if (index != -1) {
+          this.value.splice(index, 1);
+        }
       }
-      if (this.value.length === 0) {
-        this.$refs.input.value = "";
-      }
-      // this.$emit("input", this.value);
     }
   }
 };
@@ -661,15 +784,15 @@ export default {
 .ul_box {
   // margin-top: 5px;
   width: auto;
-  border: 2px solid #ccc;
+  border: 2px solid lightblue;
   min-width: 250px;
   max-width: 400px;
-  max-height: 400px;
+  max-height: 250px;
   overflow-y: auto;
   background-color: #fff;
   z-index: 1;
-  border-left: 1px solid #ccc;
-  border-top: 1px solid #ccc;
+  // border-left: 1px solid #ccc;
+  // border-top: 1px solid #ccc;
 }
 .ul_box li {
   padding: 5px 20px;

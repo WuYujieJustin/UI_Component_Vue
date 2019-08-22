@@ -1,8 +1,9 @@
 <template>
-  <div class="showArea">
+  <div>
     <div class="content_body">
+      <!-- <input v-if="status.length> 0" type="button" value="click"> -->
       <form class="form-horizontal" @submit="submit">
-        <div style="display:flex;flex-direction:column">
+        <div >
           <labeled-text
             v-model="labeledText.options"
             label-text="text"
@@ -91,7 +92,7 @@
             control-icontext=" datetime range"
             control-type="datetime"
             :control-date-range="true"
-            control-format="yyyy-MM-dd HH:mm:ss"
+            control-format="yyyy-MM-dd HH:mm"
           />
           <labeled-date-time-input
             v-model="labeledDateTimeInputTime.options"
@@ -117,7 +118,7 @@
             control-icontext=" datetime"
             control-type="datetime"
             :control-range="false"
-            control-format="yyyy-MM-dd HH:mm:ss"
+            control-format="yyyy-MM-dd HH:mm"
           />
           <labeled-number-input
             v-model="labeledNumberInput.options"
@@ -146,7 +147,7 @@
             :control-number-range="true"
           />
         </div>
-        <div style="display:flex;    justify-content: space-between;align-items: center;">
+        <div style="display:flex;justify-content: space-between;align-items: center;">
           <button type="submit" class="btn btn-primary">测试能否提交表单</button>
           <p :class="tips.class" v-show="tips.isShowTips">{{tips.message}}</p>
         </div>
@@ -232,6 +233,7 @@ export default {
   },
   data() {
     return {
+    status:{},
       tips: {
         message: "",
         class: "",
@@ -253,14 +255,14 @@ export default {
       },
       labeledSelectInput: {
         options: {
-          value: [1],
+          value: 2,
           locked: false,
           required: true
         },
         data: {
           sources: [
             {
-              id: 1,
+              id: 111111,
               text: "选项1"
             },
             {
@@ -436,7 +438,7 @@ export default {
       },
       labeledGridSelectInput: {
         options: {
-          value: [1],
+          value: 1,
           locked: false,
           required: true
         },
@@ -698,35 +700,35 @@ export default {
       },
       labeledDateTimeInputDateTime: {
         options: {
-          value: [],
+          value: ["2019-08-07 09:05","2019-08-07 09:05"],
           locked: false,
           required: true
         }
       },
       labeledDateTimeInputTime: {
         options: {
-          value: ["2019-07-09 09:25:00"],
+          value: "09:25",
           locked: false,
           required: true
         }
       },
       labeledDateTimeInputMonth: {
         options: {
-          value: [],
+          value: "2019-08-07 09:05",
           locked: false,
           required: true
         }
       },
       labeledNumberInputRange: {
         options: {
-          value: [1, 1],
+          value: [null, null],
           locked: false,
           required: true
         }
       },
       labeledNumberInput: {
         options: {
-          value: [1],
+          value: null,
           locked: false,
           required: true
         }
@@ -750,49 +752,10 @@ export default {
 </script>
 <style lang="less" scoped>
 @import "@/assets/font-awesome-4.7.0/css/font-awesome.min.css";
-.showArea {
-  width: 100%;
-}
-.content_title {
-  display: flex;
-  padding: 5px;
-}
+
 .content_body {
   display: flex;
   justify-content: space-around;
 }
-span {
-  line-height: 1.1;
-  position: relative;
-}
-thead tr th {
-  text-align: center;
-}
-// table,
-// th,
-// td {
-//   border: 1px solid black;
-// }
-// table {
-//   position: relative;
-//   // table-layout: fixed;
-// }
-// thead {
-//   background-color: gray;
-//   color: white;
-// }
-// th,
-// td {
-//   padding: 5px;
-//   word-wrap: break-word;
-// }
-// button {
-//   margin: 40px;
-//   border-radius: 5px;
-//   background-color: #49b;
-//   height: 40px;
-//   width: 150px;
-//   font-size: 25px;
-//   color: #fff;
-// }
+
 </style>

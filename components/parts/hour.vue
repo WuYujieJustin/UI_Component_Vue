@@ -1,45 +1,84 @@
 <template>
   <!-- flex layout for responsive  -->
   <div class="hour">
-    <div @click="showMin" class="hourcom" v-for="hour in hours" :key="hour">{{hour}}</div>
+    <div
+      @click="showMin"
+      class="hourcom"
+      :class="{current:targetMatchesHour(hour)}"
+      v-for="hour in hours"
+      :key="hour"
+    >{{hour}}</div>
   </div>
 </template>
 
 <script>
 export default {
   methods: {
-    hangdleClick() {
-      console.log(this.newhours);
-      console.log(this.showHour);
+    // hour table 4*6 layout
+    enter() {
+      this.showMin();
+    },
+    targetMatchesHour(hour) {
+      return this.hours[this.defaultIndex] === hour;
+    },
+    down() {
+      if (this.defaultIndex < this.length - 4) {
+        this.defaultIndex += 4;
+      }
+    },
+    up() {
+      if (this.defaultIndex >= 4) {
+        this.defaultIndex -= 4;
+      }
+    },
+    right() {
+      if (this.defaultIndex < this.length - 1) {
+        this.defaultIndex += 1;
+      }
+    },
+    left() {
+      if (this.defaultIndex > 0) {
+        this.defaultIndex -= 1;
+      }
     },
     showMin(event) {
       // emit argument event
-      this.$emit("showMin", event);
+      if (event) {
+        this.$emit("showMin", event);
+      } else {
+        let event = this.hours[this.defaultIndex];
+        this.$emit("showMin", event);
+      }
     }
   },
   data() {
-    return {};
+    return {
+      defaultIndex: 0
+    };
   },
   props: {
     hours: {
-      type: Array,
-      default: function() {
-        return [];
-      }
+      type: Array
     }
   },
   computed: {
     showHour: function() {
       return this.visible;
     },
-    newhours: function() {
-      return this.hours;
+    length() {
+      if (this.hours) {
+        return this.hours.length;
+      }
     }
   }
 };
 </script>
 
 <style lang="less" scoped>
+.current {
+  color: white;
+  background: skyblue;
+}
 .hour {
   display: flex;
   flex-wrap: wrap;
@@ -57,6 +96,9 @@ export default {
 }
 .hourcom:hover {
   color: skyblue;
+}
+.current:hover {
+  color: white;
 }
 </style>
 

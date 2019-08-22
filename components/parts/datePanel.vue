@@ -1,28 +1,28 @@
 <template>
   <div class="datepanel" @mousedown="preventDefault">
     <!-- year -->
-    <year-table v-if="datetype == `year`" @chooseYear="confirm" v-show="isYear" />
+    <year-table v-if="datetype == `year` && isYear" @chooseYear="confirm" ref="datepicker" />
 
     <!-- month -->
     <div v-if="datetype == `month`">
-      <year-table @chooseYear="confirm" v-show="isYear" />
-      <month-table v-show="isMonth" @chooseMonth="confirm" />
+      <year-table @chooseYear="confirm" v-if="isYear" ref="datepicker" />
+      <month-table v-if="isMonth" @chooseMonth="confirm" ref="datepicker" />
     </div>
 
     <!-- date -->
-    <i-input-date-picker v-if="datetype == `date`" @chooseDate="confirm" />
+    <i-input-date-picker v-if="datetype == `date`" @chooseDate="confirm" ref="datepicker" />
 
     <!-- time -->
     <div v-if="datetype == `time`">
-      <hour :hours="hours" @showMin="showMin" v-show="isHour" />
-      <minute :minutes="minutes" @confirm="confirm" v-show="isMin" />
+      <hour :hours="hours" @showMin="showMin" v-if="isHour" ref="datepicker" />
+      <minute :minutes="minutes" @confirm="confirm" v-if="isMin" ref="datepicker" />
     </div>
 
     <!-- datetime -->
     <div class="poper" v-if="datetype == `datetime`">
-      <i-input-date-picker v-show="isYear" @chooseDate="showHour" />
-      <hour :hours="hours" @showMin="showMin" v-show="isHour"/>
-      <minute :minutes="minutes" :isMin="isMin" @confirm="confirm" v-show="isMin" />
+      <i-input-date-picker v-if="isYear" @chooseDate="showHour" ref="datepicker" />
+      <hour :hours="hours" @showMin="showMin" v-if="isHour" ref="datepicker" />
+      <minute :minutes="minutes" :isMin="isMin" @confirm="confirm" v-if="isMin" ref="datepicker" />
       <today v-show="isYear || isHour || isMin" @chooseToday="chooseToday" />
     </div>
   </div>
@@ -217,9 +217,6 @@ export default {
           // 这里确保组件配合 `v-model` 的工作
           input: function(event) {
             vm.$emit("input", event.target.value);
-          },
-          onchange: function(event) {
-            vm.$emit("onchange", event.target.value);
           }
         }
       );
@@ -243,7 +240,12 @@ export default {
       }
     },
     confirm(event) {
-      var eventValue = event.target.innerText;
+      var eventValue;
+      if (event.type && event.type === "click") {
+        eventValue = event.target.innerText;
+      } else {
+        eventValue = event;
+      }
       if (this.datetype == "year") {
         this.isYear = false;
         this.pickerValue = eventValue;
@@ -285,6 +287,7 @@ export default {
           .Format(this.format)
           .substring(0, 10);
         // only slice year month date
+        // TODO .substring(0,10) is not stable
         this.$emit("confirm", this.pickerValue);
       }
       if (this.datetype == "datetime") {
@@ -316,23 +319,30 @@ export default {
     },
     showHour(event) {
       if (this.datetype == "datetime") {
-        this.status = "hour";
+        setTimeout(() => {
+          this.status = "hour";
+        }, 100);
       }
       // formate poperstyle
-      this.$nextTick(()=>{
-        this.$emit("poperStyle")
-      })
+      this.$nextTick(() => {
+        this.$emit("poperStyle");
+      });
       // receive value from child
       this.$emit("changeStatus");
       this.tempValue = event.target.timeStr;
     },
     showMin(event) {
       // formatr poperStyle
-      this.$nextTick(()=>{
-        this.$emit("poperStyle")
-      })      //format minutes
+      this.$nextTick(() => {
+        this.$emit("poperStyle");
+      }); //format minutes
       this.minutes = [];
-      this.hourPassed = Number(event.target.innerText.slice(0, -3));
+      if (event.type && event.type === "click") {
+        this.hourPassed = Number(event.target.innerText.slice(0, -3));
+      } else {
+        this.hourPassed = Number(event.toString().slice(0, -3));
+        console.log(event);
+      }
 
       for (let i = 0; i < 60; i = i + this.minRange) {
         if (i < 10) {
@@ -477,7 +487,7 @@ export default {
   z-index: 100;
   // position: absolute;
   background-color: #fff;
-  border: 1px solid #CCC
+  border: 1px solid #ccc;
 }
 input {
   cursor: pointer;

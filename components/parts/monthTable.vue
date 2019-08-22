@@ -1,61 +1,113 @@
 <template>
   <div class="monthTable">
-    <table>
-      <tbody>
-        <tr>
-          <td @click="chooseMonth">1</td>
-          <td @click="chooseMonth">2</td>
-          <td @click="chooseMonth">3</td>
-          <td @click="chooseMonth">4</td>
-        </tr>
-        <tr>
-          <td @click="chooseMonth">5</td>
-          <td @click="chooseMonth">6</td>
-          <td @click="chooseMonth">7</td>
-          <td @click="chooseMonth">8</td>
-        </tr>
-        <tr>
-          <td @click="chooseMonth">9</td>
-          <td @click="chooseMonth">10</td>
-          <td @click="chooseMonth">11</td>
-          <td @click="chooseMonth">12</td>
-        </tr>
-      </tbody>
-    </table>
+    <div style="display:flex" class="month">
+      <div
+        @click="chooseMonth"
+        class="monthcom"
+        v-for="(month,index) in months"
+        :key="index"
+        :class="{current:targetMatchesmonth(month)}"
+      >{{month}}</div>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
-  methods:{
-    chooseMonth(event){
-      console.log(event.target.innerText)
-      this.$emit("chooseMonth",event)
+  computed: {
+    months() {
+      // push 12 months in months
+      this.defaultArray = []
+      for (let i = 0; i < 12; i++) {
+        this.defaultArray.push(this.defaultmonth+i);
+      }
+      return this.defaultArray;
+    }
+  },
+  data() {
+    return {
+      defaultIndex: 0,
+      defaultArray: [],
+      defaultmonth: 1,
+      length:12
+    };
+  },
+  methods: {
+    enter() {
+      this.chooseMonth();
+    },
+    targetMatchesmonth(month) {
+      return this.months[this.defaultIndex] === month;
+    },
+    down() {
+      if (this.defaultIndex < this.length - 4) {
+        this.defaultIndex += 4;
+      }
+    },
+    up() {
+      if (this.defaultIndex >= 4) {
+        this.defaultIndex -= 4;
+      }
+    },
+    right() {
+      if (this.defaultIndex < this.length - 1) {
+        this.defaultIndex += 1;
+      }
+    },
+    left() {
+      if (this.defaultIndex > 0) {
+        this.defaultIndex -= 1;
+      }
+    },
+    chooseMonth(event) {
+      
+      if(event ===undefined){
+        let event
+        event.target.innerText = this.defaultArray[this.defaultIndex]
+        this.$emit("chooseMonth", event);
+      }else{
+        console.log(event.target.innerText)
+        this.$emit("chooseMonth", event);
+      }
     }
   }
 };
 </script>
 
 <style lang="less" scoped>
-.monthTable{
-  position: absolute;
-  width:300px;
-  background:#FFF;
-  z-index:100000;
-
-}
-table,tbody{
-  width: 100%;
-}
-td{
-  width:25%
-}
-td{
+.monthcom {
+  width: 25%;
   cursor: pointer;
-  padding: 15px
+  padding: 15px;
 }
-td:hover{
-  color:skyblue
+.month {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  position: absolute;
+  width: 300px;
+  border: 1px solid #ccc;
+  z-index: 100000000000000;
+  background: #fff;
+}
+.monthTable {
+  background: #fff;
+  z-index: 100;
+  position: absolute;
+  width: 300px;
+  border: 1px solid #ccc;
+}
+.current {
+  color: white;
+  background: skyblue;
+}
+.monthcom:hover {
+  color: skyblue;
+}
+.current:hover {
+  color: white;
 }
 </style>
+
+
 

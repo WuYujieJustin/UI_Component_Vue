@@ -70,7 +70,7 @@ export function labelComponent(component, eventName) {
             },
             controlFormat: {
                 type: String,
-                default: "yyyy-MM-dd HH:mm:ss"
+                default: "yyyy-MM-dd HH:mm"
             },
             controlReadonly: {
                 type: Boolean,
@@ -151,7 +151,7 @@ export function labelComponent(component, eventName) {
                 // 与 `v-bind:style` 的 API 相同，
                 // 接受一个字符串、对象，或对象组成的数组
                 style: {
-                    width: (this.controlWidth || 500) + 'px',
+                    width: this.controlWidth ||'500px',
                     // minWidth: "600px"
                 },
             }, [
@@ -160,7 +160,7 @@ export function labelComponent(component, eventName) {
                             // 与 `v-bind:style` 的 API 相同，
                             // 接受一个字符串、对象，或对象组成的数组
                             style: {
-                                width: this.labelText?((this.labelWidth || '90') + 'px'):0,
+                                width: this.labelText?(this.labelWidth || '90px'):0,
                             },
                             attrs: {
                                 // class: this.labelClass
@@ -200,8 +200,8 @@ export function labelComponent(component, eventName) {
                                 options: this.dataSources,
                                 multi: this.controlMultiple,
                                 required: this.options.required,
-                                readonly: this.controlReadonly,
-                                placeholder: this.controlPlaceholder || this.options.locked,
+                                readonly: this.controlReadonly  || this.options.locked,
+                                placeholder: this.controlPlaceholder,
                                 displayField: this.dataDisplayfield,
                                 colNames: this.dataColumns,
                                 height: this.controlHeight,

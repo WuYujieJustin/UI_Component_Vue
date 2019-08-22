@@ -16,16 +16,12 @@
     </div>
     <year-table v-show="yearVisible" @chooseYear="closeYear" />
     <month-table v-show="monthVisible" @chooseMonth="closeMonth" />
-    <table
-      @click="handleClick"
-      @mousemove="handleMouseMove"
-      :class="{ 'is-week-mode': selectionMode === 'week' }"
-    >
+    <table>
       <tbody>
         <tr>
           <th disabled class="weeks" v-for="(week, key) in WEEKS" :key="key">{{week}}</th>
         </tr>
-        <tr v-for="(row, key) in rows" :class="{ current: isWeekActive(row[1]) }" :key="key">
+        <tr v-for="(row, key) in rows" :key="key">
           <td
             v-for="(cell, key) in row"
             :class="getCellClasses(cell)"
@@ -73,13 +69,30 @@ const getDateTimestamp = function(time) {
   }
 };
 export default {
-  // provided by the ancestor
-  // inject: ["isRequired"],
   components: {
     yearTable,
     monthTable
   },
   methods: {
+    enter() {
+      this.chooseDate();
+    },
+    right() {
+      this.time = this.date.setDate(this.date.getDate() + 1);
+      this.date = new Date(this.time);
+    },
+    left() {
+      this.time = this.date.setDate(this.date.getDate() - 1);
+      this.date = new Date(this.time);
+    },
+    up() {
+      this.time = this.date.setDate(this.date.getDate() - 7);
+      this.date = new Date(this.time);
+    },
+    down() {
+      this.time = this.date.setDate(this.date.getDate() + 7);
+      this.date = new Date(this.time);
+    },
     popYear(event) {
       this.yearVisible = !this.yearVisible;
       this.monthVisible = false;
@@ -119,19 +132,28 @@ export default {
       this.monthVisible = false;
     },
     chooseDate(cell) {
-      if (cell.type == "prev-month") {
-        this.date = prevMonth(this.date);
-      }
-      if (cell.type == "next-month") {
-        this.date = nextMonth(this.date);
+      // cell 用来判断月份类型  非必须
+      if (cell) {
+        if (cell.type == "prev-month") {
+          this.date = prevMonth(this.date);
+        }
+        if (cell.type == "next-month") {
+          this.date = nextMonth(this.date);
+        }
       }
 
       this.rightMonth = this.month + 1;
-      let timeStr = this.year + "-" + this.rightMonth + "-" + Number(cell.text);
+      let timeStr = this.year + "-" + this.rightMonth + "-";
+      // 通过键盘或者点击事件选择
+      if (cell === undefined) {
+        timeStr += this.date.getDate();
+      } else {
+        timeStr += Number(cell.text);
+        this.time = this.date.setDate(Number(cell.text));
+        this.date = new Date(this.time);
+      }
       // add timeStr to event Object
       event.target.timeStr = timeStr;
-
-      this.isHour = true;
       // inform parent component chooseDate fired
       this.$emit("chooseDate", event);
     },
@@ -197,11 +219,13 @@ export default {
       }
 
       if (
-        selectionMode === "day" &&
         (cell.type === "normal" || cell.type === "today") &&
-        this.cellMatchesDate(cell, this.value)
+        this.cellMatchesDate(cell, this.date)
       ) {
         classes.push("current");
+      }
+      if(cell.selected == true){
+        classes.push("current")
       }
 
       if (
@@ -256,89 +280,6 @@ export default {
         return weekDate.getTime() === newDate.getTime();
       }
       return false;
-    },
-    handleClick(event) {
-      let target = event.target;
-      if (target.tagName === "SPAN") {
-        target = target.parentNode.parentNode;
-      }
-      if (target.tagName === "DIV") {
-        target = target.parentNode;
-      }
-
-      if (target.tagName !== "TD") return;
-
-      const row = target.parentNode.rowIndex - 1;
-      const column = this.selectionMode === "week" ? 1 : target.cellIndex;
-      const cell = this.rows[row][column];
-
-      if (cell.disabled || cell.type === "week") return;
-
-      const newDate = this.getDateOfCell(row, column);
-
-      if (this.selectionMode === "range") {
-        if (!this.rangeState.selecting) {
-          this.$emit("pick", { minDate: newDate, maxDate: null });
-          this.rangeState.selecting = true;
-        } else {
-          if (newDate >= this.minDate) {
-            this.$emit("pick", { minDate: this.minDate, maxDate: newDate });
-          } else {
-            this.$emit("pick", { minDate: newDate, maxDate: this.minDate });
-          }
-          this.rangeState.selecting = false;
-        }
-      } else if (this.selectionMode === "day") {
-        this.$emit("pick", newDate);
-      } else if (this.selectionMode === "week") {
-        const weekNumber = getWeekNumber(newDate);
-        const value = newDate.getFullYear() + "w" + weekNumber;
-        this.$emit("pick", {
-          year: newDate.getFullYear(),
-          week: weekNumber,
-          value: value,
-          date: newDate
-        });
-      } else if (this.selectionMode === "dates") {
-        const value = this.value || [];
-        const newValue = cell.selected
-          ? removeFromArray(value, date => date.getTime() === newDate.getTime())
-          : [...value, newDate];
-        this.$emit("pick", newValue);
-      }
-    },
-    handleMouseMove(event) {
-      if (!this.rangeState.selecting) return;
-
-      let target = event.target;
-      if (target.tagName === "SPAN") {
-        target = target.parentNode.parentNode;
-      }
-      if (target.tagName === "DIV") {
-        target = target.parentNode;
-      }
-      if (target.tagName !== "TD") return;
-
-      const row = target.parentNode.rowIndex - 1;
-      const column = target.cellIndex;
-
-      // can not select disabled date
-      if (this.rows[row][column].disabled) return;
-
-      // only update rangeState when mouse moves to a new cell
-      // this avoids frequent Date object creation and improves performance
-      if (row !== this.lastRow || column !== this.lastColumn) {
-        this.lastRow = row;
-        this.lastColumn = column;
-        this.$emit("changerange", {
-          minDate: this.minDate,
-          maxDate: this.maxDate,
-          rangeState: {
-            selecting: true,
-            endDate: this.getDateOfCell(row, column)
-          }
-        });
-      }
     }
   },
   props: {
@@ -361,7 +302,7 @@ export default {
       }
     },
 
-    date: {
+    propDate: {
       type: Date,
       default: function() {
         return new Date();
@@ -394,6 +335,7 @@ export default {
   },
   data() {
     return {
+      time: new Date().getTime(),
       isHour: false,
       tableRows: [[], [], [], [], [], []],
       lastRow: null,
@@ -401,16 +343,22 @@ export default {
       currentView: "date",
       rightMonth: this.month,
       yearVisible: false,
-      monthVisible: false
+      monthVisible: false,
+      date: new Date(this.propDate.getTime())
     };
   },
   computed: {
-    //子组件不应该自己更改prop的值
     year() {
-      return this.date.getFullYear();
+      if (this.date) {
+        // console.log(this.date.getFullYear())
+        return this.date.getFullYear();
+      }
     },
     month() {
-      return this.date.getMonth();
+      if (this.date) {
+        // console.log(this.date.getMonth())
+        return this.date.getMonth();
+      }
     },
     yearLabel() {
       const yearTranslation = "年";
@@ -568,6 +516,9 @@ export default {
 .available:hover {
   color: skyblue;
 }
+.current:hover {
+  color: white;
+}
 .controlPanel {
   display: flex;
   justify-content: space-between;
@@ -597,8 +548,9 @@ table {
 p {
   cursor: pointer;
 }
-.today {
-  color: skyblue;
+.current {
+  color: white;
+  background: skyblue;
 }
 td {
   padding: 10px;
@@ -606,7 +558,7 @@ td {
 .datepicker {
   width: 300px;
   background: #fff;
-  border: 1px solid #cccccc
+  border: 1px solid #cccccc;
 }
 th {
   text-align: center;

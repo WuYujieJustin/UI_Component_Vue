@@ -7,7 +7,7 @@
       style="resize:none"
       v-bind="$attrs"
       v-on="inputListeners"
-      v-bind:style="{ height: height + 'px' ,}"
+      v-bind:style="{ height: height,}"
       cols="50"
       rows="5"
       v-bind:value="value"

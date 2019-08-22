@@ -3,7 +3,7 @@
       <!-- v-on:input="transData" -->
 
     <input class="form-control"
-      :style="{'padding-right':(icon && icontext)?spanwidth+'px':(icontext?spanwidth+'px':'39px')}"
+      :style="{'padding-right':(icon && icontext)?(spanwidth+'px'):(icontext?(spanwidth+'px'):'10px')}"
       type="text"
       v-bind="$attrs"
       v-on="inputListeners"

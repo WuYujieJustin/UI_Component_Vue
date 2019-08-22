@@ -32,8 +32,8 @@
             type="text"
             :style="{'width':(selectedData.length>0?(inputwidth+'px'):'100%'),'padding-right':selectedData.length===0?spanwidth+'px':0}"
             ref="input"
-            v-on:focus="toggleTable"
-            v-on:blur="toggleTable"
+            v-on:focus="inputFocus"
+            v-on:blur="inputBlur"
             v-on:keyup.backspace="deleteSeleted"
             v-on:keydown.enter="enterPreventDefault"
             v-on:keyup.up="up"
@@ -41,6 +41,7 @@
             v-on:keyup.enter="enter"
             :placeholder="placeholder"
             v-on:input="input"
+            v-on:mousedown="inputMousedown"
             :required="selectedData.length>0?false:required"
           />
         </div>
@@ -60,7 +61,9 @@
           @mouseenter="mouseenter"
           @mouseleave="mouseleave"
         >
-          <div style="position:absolute;height:31px;background-color:#fff;z-index:10;width:100%">
+          <div
+            style="position:absolute;height:31px;background-color:#fff;z-index:10;width:100%;overflow:hidden"
+          >
             <table class="table table-bordered table-hover">
               <thead>
                 <tr v-if="theads">
@@ -68,7 +71,7 @@
                   <th v-for="thead in theads" :key="thead">{{thead}}</th>
                 </tr>
               </thead>
-              <tbody style="visibility:hidden" v-if="!searchState">
+              <!-- <tbody style="visibility:hidden" v-if="!searchState">
                 <tr>
                   <td>1</td>
                   <td v-for="(value,key) in lists[lists.length-1]" :key="key">{{value}}</td>
@@ -84,10 +87,30 @@
                 <tr>
                   <td :colspan="Object.keys(lists[0]).length+1">暂无结果，请重新搜索……</td>
                 </tr>
+              </tbody>-->
+              <tbody style="visibility:hidden" v-if="!searchState">
+                <tr v-for="(list,index) in lists" :key="index">
+                  <td>{{index+1}}</td>
+                  <td v-for="(value,key) in list" :key="key">{{value}}</td>
+                </tr>
+              </tbody>
+              <tbody style="visibility:hidden" v-else-if="searchState && !noResult">
+                <tr v-for="(list,index) in searchLists" :key="index">
+                  <td>{{index+1}}</td>
+                  <td v-for="(value,key) in list" :key="key">{{value}}</td>
+                </tr>
+              </tbody>
+              <tbody style="visibility:hidden" v-else-if="noResult">
+                <tr>
+                  <td :colspan="Object.keys(lists[0]).length+1">暂无结果，请重新搜索……</td>
+                </tr>
               </tbody>
             </table>
           </div>
-          <div style="position:relative;max-height:400px;overflow:auto;height:auto">
+          <div
+            style="position:relative;max-height:280px;overflow:auto;height:auto"
+            class="table_noscrollbar"
+          >
             <table ref="table" class="table table-bordered table-hover">
               <thead>
                 <tr v-if="theads">
@@ -140,6 +163,7 @@
 export default {
   data() {
     return {
+      searchTimeOutFlag: 0,
       fixed: false,
       clickPix: 0,
       divTop: 0,
@@ -186,7 +210,7 @@ export default {
     },
     //组件传出的数据
     value: {
-      type: Array
+      type: [Array, Number]
     },
     //传入的label文本内容
     label: {
@@ -231,37 +255,49 @@ export default {
         //拿到列头
         return Object.keys(this.lists[0]);
       }
-    },
-
-    // divTop() {
-    //   return this.$refs.input.getBoundingClientRect().top;
-    // },
-    screenHeight() {
-      return document.documentElement.clientHeight;
     }
   },
   mounted() {
     var that = this;
-
     // console.log("SL数据挂载执行完毕，打印value", this.value);
-    if (
-      this.lists &&
-      this.lists.length > 0 &&
-      this.value &&
-      this.value.length > 0 &&
-      this.selectedData &&
-      this.selectedData.length == 0
-    ) {
-      //数据已经挂载，外部传入value（选中的信息），将对应value显示出来
-      // console.log("SL该自动选中列表咯");
-      that.value.forEach(function(num) {
+    if (!this.multi) {
+      if (
+        this.lists &&
+        this.lists.length > 0 &&
+        this.value &&
+        this.selectedData &&
+        this.selectedData.length == 0
+      ) {
+        //数据已经挂载，外部传入value（选中的信息），将对应value显示出来
+        // console.log("SL该自动选中列表咯");
+        let num = this.value;
         that.lists.forEach(function(obj, index) {
           if (obj.id == num) {
             // console.log("obj", obj);
             that.selectedData.push(obj);
           }
         });
-      });
+      }
+    } else {
+      if (
+        this.lists &&
+        this.lists.length > 0 &&
+        this.value &&
+        this.value.length > 0 &&
+        this.selectedData &&
+        this.selectedData.length == 0
+      ) {
+        //数据已经挂载，外部传入value（选中的信息），将对应value显示出来
+        // console.log("SL该自动选中列表咯");
+        that.value.forEach(function(num) {
+          that.lists.forEach(function(obj, index) {
+            if (obj.id == num) {
+              // console.log("obj", obj);
+              that.selectedData.push(obj);
+            }
+          });
+        });
+      }
     }
   },
   updated() {
@@ -313,7 +349,7 @@ export default {
             // 矫正值60，因为顶部高60
             if (domHeight + 60 < that.divTop) {
               // this.topDiv = "-410px";
-              this.fixed = false;
+              that.fixed = false;
               that.topDiv = "-" + domHeight + "px";
             } else {
               // console.log("距顶", that.divTop);
@@ -345,17 +381,79 @@ export default {
       }
     },
     input: function(event) {
-      // console.log("input event", event);
-      // event.target.value = this.value;
-      this.triggerDel = false;
-      this.triggerEnter = false;
+      if (this.triggerDel) {
+        this.triggerDel = false;
+      }
+      if (this.triggerEnter) {
+        this.triggerEnter = false;
+      }
+      // console.log(event);
+      if (!this.showTable) {
+        this.showTable = true;
+      }
+      //定义延时搜索
+      let that = this;
+      let timout = setTimeout(() => {
+        that.noResult = false;
+        let searchString = "";
+        if (event.target.value.length > 0) {
+          searchString = event.target.value.trim().toLowerCase();
+          event.target.value = searchString;
+        } else {
+          that.searchLists = [];
+          that.searchState = false;
+        }
+        if (searchString) {
+          that.searchLists = that.lists;
+          that.searchLists = that.searchLists.filter(function(obj) {
+            // let keys = Object.keys(obj);
+            let keys = "text";
+
+            // for (let i = 0; i < keys.length; i++) {
+            //   let key = keys[i];
+            if (
+              obj[keys]
+                .toString()
+                .toLowerCase()
+                .indexOf(searchString) !== -1
+            ) {
+              return obj;
+            }
+            // }
+          });
+          that.searchState = true;
+          that.currentTr = 0;
+          if (that.searchLists.length === 0) {
+            //若搜索结果为空，清除输入文本，提示无搜索结果，延时1s后显示所有选项
+            that.noResult = true;
+            event.target.value = "";
+            setTimeout(() => {
+              that.searchLists = that.lists;
+              that.noResult = false;
+            }, 1000);
+          } else {
+            that.triggerEnter = true;
+          }
+        } else {
+          that.searchState = false;
+        }
+        that.scrollListener();
+      }, 1000);
+
+      //执行或清除延时搜索
+      if (this.searchTimeOutFlag == 0) {
+        this.searchTimeOutFlag = timout;
+      } else {
+        clearTimeout(this.searchTimeOutFlag);
+        this.searchTimeOutFlag = timout;
+      }
     },
     inputfocus(event) {
       this.$refs.input.focus();
     },
     mouseenter: function() {
       // console.log("mouseEnter");
-      if (!this.searchState) {
+      if (!this.searchState && this.$refs[this.currentTr]) {
         this.$refs[this.currentTr][0].classList.remove("hover");
       }
     },
@@ -406,65 +504,33 @@ export default {
     },
     enter: function(event) {
       event.preventDefault();
-      if (this.triggerEnter === true && this.noResult === false) {
-        event.target.value = event.target.value.replace(/\s+/g, "");
+      if (
+        this.triggerEnter === true &&
+        this.noResult === false &&
+        this.showTable
+      ) {
+        this.$refs.input.value = this.$refs.input.value.replace(/\s+/g, "");
         let id = this.$refs[this.currentTr][0].dataset.id;
         // console.log("this.currentTr", this.currentTr);
         // this.$options.methods.trClick(id,this.currentTr)
         this.trClick(id, this.currentTr);
       } else {
-        this.noResult = false;
-        let searchString = "";
-
-        if (event.target.value.length > 0) {
-          searchString = event.target.value.trim().toLowerCase();
-          event.target.value = searchString;
-        } else {
-          this.searchLists = [];
-          this.searchState = false;
-        }
-        if (searchString) {
-          this.searchLists = this.lists;
-          this.searchLists = this.searchLists.filter(function(obj) {
-            let keys = Object.keys(obj);
-            for (let i = 0; i < keys.length; i++) {
-              let key = keys[i];
-              if (
-                obj[key]
-                  .toString()
-                  .toLowerCase()
-                  .indexOf(searchString) !== -1
-              ) {
-                return obj;
-              }
-            }
-          });
-          this.searchState = true;
-          this.currentTr = 0;
-          if (this.searchLists.length === 0) {
-            this.noResult = true;
-            event.target.value = "";
-          }
-        } else {
-          this.searchState = false;
-        }
-
-        let that = this;
-        if (this.isUpDown) {
-          setTimeout(() => {
-            let dom1 = that.$refs.scrollDiv;
-            let dom2 = that.$refs.table;
-            console.log(
-              "scrollDiv,table",
-              dom1.offsetHeight,
-              dom2.offsetHeight
-            );
-            that.topDiv = "-" + dom2.offsetHeight + "px";
-          }, 10);
+        //单选 enter特殊处理
+        if (!this.multi && !this.triggerEnter && this.showTable) {
+          this.showTable = false;
+          //敲击回车时若未激活回车选择功能，且panel是展开的，就关闭panel
+          // if (this.showTable) {
+          //   this.showTable = false;
+          // }
+        } else if (!this.multi && !this.triggerEnter && !this.showTable) {
+          this.inputFocus();
         }
       }
     },
     up: function(event) {
+      if (!this.showTable) {
+        return;
+      }
       event.preventDefault();
 
       this.triggerEnter = true;
@@ -501,6 +567,9 @@ export default {
       }
     },
     down: function(event) {
+      if (!this.showTable) {
+        return;
+      }
       event.preventDefault();
       if (this.currentTr === 0 && this.triggerEnter === false) {
         if (this.$refs[this.currentTr][0]) {
@@ -545,8 +614,13 @@ export default {
     deleteSeleted: function(event) {
       // console.log("按键事件", event);
       if (event.target.value === "" && this.triggerDel && this.selectedData) {
-        this.selectedData.pop();
-        this.value.pop();
+        if (!this.multi) {
+          this.selectedData = [];
+          this.$emit("input", null);
+        } else {
+          this.selectedData.pop();
+          this.value.pop();
+        }
       } else {
         this.triggerDel = true;
       }
@@ -561,9 +635,9 @@ export default {
       ) {
         result += "active1 ";
       }
-      // if (index === 0) {
-      //   result += "hover ";
-      // }
+      if (!this.noResult && this.triggerEnter && index === 0) {
+        result += "hover ";
+      }
       return result;
     },
     //展示选项
@@ -595,26 +669,12 @@ export default {
         //位于下半部分
         if (halfHeight - this.divTop <= 0) {
           this.isUpDown = true;
-          this.fixed= false
-          this.topDiv = '-400px'
-          if(460>this.divTop){
-          this.fixed= true
-          this.topDiv = '60px'
+          this.fixed = false;
+          this.topDiv = "-280px";
+          if (340 > this.divTop) {
+            this.fixed = true;
+            this.topDiv = "60px";
           }
-          // setTimeout(() => {
-          //   let dom = that.$refs.scrollDiv;
-          //   let domHeight = dom.offsetHeight;
-          //   //矫正值60，因为顶部高60
-          //   if (domHeight + 60 < that.divTop) {
-          //     // this.topDiv = "-410px";
-          //     this.fixed = false;
-          //     that.topDiv = "-" + domHeight + "px";
-          //   } else {
-          //     that.fixed = true;
-          //     that.isUpDown = false;
-          //     that.topDiv = 60 + "px";
-          //   }
-          // }, 10);
         } else {
           this.fixed = false;
           this.topDiv = "";
@@ -623,9 +683,59 @@ export default {
         window.addEventListener("scroll", that.scrollListener);
       }
     },
+    inputFocus(event) {
+      let that = this;
+      this.triggerEnter = false;
+      this.noResult = false;
+      this.searchState = false;
+      this.currentTr = 0;
+      this.downArrow = false;
+      this.scrollTop = 0;
+      this.divTop = this.$refs.input.getBoundingClientRect().top;
+      let halfHeight = document.documentElement.clientHeight / 2;
+      //位于下半部分
+      if (halfHeight - this.divTop <= 0) {
+        this.isUpDown = true;
+        this.fixed = false;
+        this.topDiv = "-250px";
+        if (310 > this.divTop) {
+          this.fixed = true;
+          this.topDiv = "60px";
+        }
+      } else {
+        this.fixed = false;
+        this.topDiv = "";
+      }
+      this.showTable = true;
+      window.addEventListener("scroll", that.scrollListener);
+    },
+    //input 失焦
+    inputBlur(event) {
+      let that = this;
+      if (this.showTable === true) {
+        this.showTable = false;
+      } else {
+        this.$refs.input.blur();
+      }
+      this.downArrow = true;
+      this.triggerEnter = false;
+      //失焦后清除input内的文本
+      event.target.value = "";
+      // this.$refs.input.value = "";
+      this.noResult = false;
+      this.searchState = false;
+      window.removeEventListener("scroll", that.scrollListener);
+    },
     //点击选项时阻止input的blur事件
     tableMousedown: function(event) {
       event.preventDefault();
+    },
+    //单选状态下，panel关闭状态下，点击input时，重新触发focus
+    inputMousedown: function(event) {
+      event.preventDefault();
+      if (!this.multi && !this.showTable) {
+        this.inputFocus();
+      }
     },
     //每一行点击事件
     trClick: function(id, index) {
@@ -635,17 +745,21 @@ export default {
 
       const classList = this.$refs[index][0].classList;
       //找到点击项目的id
-      const clickItemId = id;
+      const selectedId = id;
       const indexInLists = index;
       //如果已有class，清掉
       if (classList.contains("active1")) {
         classList.remove("active1");
         this.selectedData = this.selectedData.filter(function(item) {
-          return item.id != clickItemId;
+          return item.id != selectedId;
         });
-        let indexInValue = this.value.indexOf(clickItemId * 1);
-        if (indexInValue != -1) {
-          this.value.splice(indexInValue, 1);
+        if (this.multi) {
+          let indexInValue = this.value.indexOf(selectedId * 1);
+          if (indexInValue != -1) {
+            this.value.splice(indexInValue, 1);
+          }
+        } else {
+          this.$emit("input", null);
         }
         // this.$emit("input", this.value);
         if (this.value.length === 0) {
@@ -653,36 +767,52 @@ export default {
           this.$refs.input.value = "";
         }
       } else {
-        //如果单选模式
         if (!this.multi) {
           this.selectedData = [];
-          while (this.value && this.value.length > 0) {
-            this.value.pop();
-          }
         }
-        //多选模式
         classList.add("active1");
         if (!this.searchState) {
           this.selectedData.push(this.lists[indexInLists]);
           //用于输出
           // console.log("this.value", this.value);
-          this.value.push(
-            this.$options.methods.forOutput(
+          if (!this.multi) {
+            let value = this.$options.methods.forOutput(
               this.lists[indexInLists],
               this.outputField
-            )
-          );
+            );
+            this.$emit("input", value);
+          } else {
+            this.value.push(
+              this.$options.methods.forOutput(
+                this.lists[indexInLists],
+                this.outputField
+              )
+            );
+          }
           // this.$emit("input", this.value);
         } else {
           this.selectedData.push(this.searchLists[indexInLists]);
           //用于输出
           // console.log("this.value", this.value);
-          this.value.push(
-            this.$options.methods.forOutput(
+          if (!this.multi) {
+            let value = this.$options.methods.forOutput(
               this.searchLists[indexInLists],
               this.outputField
-            )
-          );
+            );
+            this.$emit("input", value);
+          } else {
+            this.value.push(
+              this.$options.methods.forOutput(
+                this.searchLists[indexInLists],
+                this.outputField
+              )
+            );
+          }
+        }
+        if (!this.multi) {
+          this.triggerEnter = false;
+          this.showTable = false;
+          this.$refs.input.value = "";
         }
       }
     },
@@ -696,15 +826,14 @@ export default {
       this.selectedData = this.selectedData.filter(function(item) {
         return item.id != selectedId;
       });
-      let index = this.value.indexOf(selectedId * 1);
-      if (index != -1) {
-        this.value.splice(index, 1);
+      if (!this.multi) {
+        this.$emit("input", null);
+      } else {
+        let index = this.value.indexOf(selectedId * 1);
+        if (index != -1) {
+          this.value.splice(index, 1);
+        }
       }
-      if (this.value.length === 0) {
-        // console.log("this.$refs.input", this.$refs.input);
-        this.$refs.input.value = "";
-      }
-      // this.$emit("input", this.value);
     }
   }
 };
@@ -716,12 +845,12 @@ export default {
   // margin-top: 10px;
   // min-width: 50%;
   // min-height: 100px;
-  width:100%;
+  width: 100%;
   max-width: 400px;
-  max-height: 400px;
+  max-height: 280px;
   // overflow-y: auto;
   overflow: hidden;
-  border: 1px solid #ccc;
+  border: 2px solid lightblue;
   position: absolute;
   background-color: #fff;
   z-index: 1;
@@ -734,6 +863,7 @@ export default {
   table {
     // position: relative;
     width: 100%;
+    margin-bottom: 0;
   }
   thead {
     // background-color: lightblue;
@@ -752,5 +882,8 @@ export default {
 }
 .example table tbody tr.hover {
   background: rgb(245, 245, 245);
+}
+.table_noscrollbar::-webkit-scrollbar {
+  width: 0;
 }
 </style>

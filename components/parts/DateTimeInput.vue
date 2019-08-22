@@ -1,15 +1,46 @@
 <template>
-  <div class="example" ref="totalWidth">
-    <input
-      ref="input"
-      :value="pickerValue"
-      v-on="inputListeners"
-      @focus="showTime"
-      class="form-control"
-      :required="required"
-      :placeholder="placeholder"
-      @blur="changeBlur"
-    />
+  <div class="example">
+    <div style="display:flex" ref="totalWidth">
+      <input
+        autocomplete="off"
+        ref="input"
+        :value="pickerValue"
+        v-on="inputListeners"
+        @focus="showTime"
+        class="form-control"
+        :required="required"
+        :placeholder="placeholder"
+        name="from"
+        @blur="changeBlur"
+        @keydown.tab="tab"
+        @keydown.down="down"
+        @keydown.right="right"
+        @keydown.left="left"
+        @keydown.up="up"
+        @keydown.enter="enter"
+      />
+      <div style="width:50px; align-item:center" v-if="daterange">
+        <span class="glyphicon glyphicon-minus" aria-hidden="true" style="margin:10px"></span>
+      </div>
+      <input
+        autocomplete="off"
+        v-if="daterange"
+        ref="inputRange"
+        :value="secondPickerValue"
+        v-on="inputListeners"
+        @focus="showTime"
+        class="form-control"
+        :required="required"
+        :placeholder="placeholder"
+        name="end"
+        @keydown.tab="tabrange"
+        @keydown.down="downrange"
+        @keydown.right="rightrange"
+        @keydown.left="leftrange"
+        @keydown.up="uprange"
+        @keydown.enter="enterrange"
+      />
+    </div>
     <div
       class="datepicker"
       ref="datepicker"
@@ -50,6 +81,7 @@
 
 <script>
 import datePanel from "~/components/parts/datePanel.vue";
+
 export default {
   inheritAttrs: false,
   computed: {
@@ -65,8 +97,21 @@ export default {
         {
           // 这里确保组件配合 `v-model` 的工作
           input: function(event) {
-            vm.$emit("input", [event.target.value])
-            vm.pickerValue = event.target.value
+            let eValue = event.target.value;
+            vm.$emit("input", [eValue]);
+            if (vm.daterange) {
+              // input name
+              if (event.target.name == "end") {
+                vm.$emit("input", [vm.pickerValue || null, eValue]);
+                vm.secondPickerValue = eValue;
+              } else {
+                vm.$emit("input", [eValue, vm.secondPickerValue || null]);
+                vm.pickerValue = eValue;
+              }
+            } else {
+              vm.$emit("input", [eValue]);
+              vm.pickerValue = eValue;
+            }
           }
         }
       );
@@ -88,14 +133,15 @@ export default {
       isMonthprop: false,
       btnvisibleprop: false,
       isYearProp: false,
-      pickerValue: this.value,
       status: false,
       position: 0,
       poperHeight: 0,
       inputHeight: 0,
       inputTop: 0,
       totalHeight: 0,
-      inputBottom: 0
+      inputBottom: 0,
+      pickerValue: this.daterange ? this.value[0] : this.value,
+      secondPickerValue: this.daterange ? this.value[1] : ""
     };
   },
   components: {
@@ -131,7 +177,7 @@ export default {
     },
     format: {
       type: String,
-      default: "yyyy-MM-dd HH:mm:ss"
+      default: "yyyy-MM-dd"
     },
     placeholder: {
       type: String
@@ -144,54 +190,132 @@ export default {
     this.inputTop = this.$refs.totalWidth.getBoundingClientRect().top;
     this.totalHeight = window.innerHeight;
     this.inputBottom = this.totalHeight - this.inputTop;
-    if (this.$refs.ispan) {
-      var dom = this.$refs.ispan;
-      this.spanwidth = dom.offsetWidth;
-    }
-    if (this.$refs.input && this.$refs.totalWidth) {
-      let totalWidth = this.$refs.totalWidth.offsetWidth;
-
-      this.$refs.input.style.width = totalWidth - this.spanwidth + "px";
+    var dom = this.$refs.ispan;
+    this.spanwidth = dom.offsetWidth;
+    // console.log(this.spanwidth+"this.spanwidth")
+    let totalWidth = this.$refs.totalWidth.offsetWidth;
+    if (this.daterange) {
+      //total - span - 50 /2
+      // +1px 消除边界
+      this.$refs.inputRange.style.width = this.$refs.input.style.width =
+        (totalWidth - this.spanwidth - 50 + 2) / 2 + "px";
+    } else {
+      this.$refs.input.style.width = totalWidth - this.spanwidth + 2 + "px";
     }
   },
   methods: {
-    updatePosition() {
-      this.$nextTick(() => {
-        //assign value
-        this.inputTop = this.$refs.totalWidth.getBoundingClientRect().top;
-        this.totalHeight = window.innerHeight;
-        this.inputBottom = this.totalHeight - this.inputTop;
-        this.poperHeight = this.$refs.datepicker.offsetHeight;
-        // console.log(
-        //   this.poperHeight +
-        //     "this.poperHeight = this.$refs.datepicker.style.width;"
-        // );
+    tabrange() {
+      this.status = false;
+    },
+    tab() {
+      // 如果是范围选择 不操作
+      if (!this.daterange) {
+        this.status = false;
+      }
+    },
 
-        // poper up
-        // 上方够下方不够 定位在上方
-        if (
-          this.poperHeight > this.inputBottom &&
-          this.poperHeight < this.inputTop
-        ) {
-          // console.log("上方够下方不够 定位在input上方 datetime");
-          // console.log(this.poperHeight + "this.poperHeight");
-          // console.log(this.$refs.datepicker);
-          this.position = this.inputTop - this.poperHeight;
-        }
-        //上下均不够 定位在底部 bottom 0
-        if (
-          this.poperHeight > this.inputBottom &&
-          this.poperHeight > this.inputTop
-        ) {
-          // console.log("上下均不够 定位在底部 bottom 0");
-          this.position = this.totalHeight - this.poperHeight;
-        }
-        //只要下方空间够 定位在input下方
-        if (this.poperHeight < this.inputBottom) {
-          this.position = this.inputTop + this.inputHeight;
-          // console.log("只要下方空间够 定位在input下方");
-        }
-      });
+    enter(event) {
+      event.preventDefault();
+      if (this.status) {
+        this.$refs.datePanel.$refs.datepicker.enter(event);
+      }
+    },
+    down() {
+      if (this.status) {
+        event.preventDefault();
+
+        this.$refs.datePanel.$refs.datepicker.down();
+      }
+    },
+    left() {
+      if (this.status) {
+        event.preventDefault();
+
+        this.$refs.datePanel.$refs.datepicker.left();
+      }
+    },
+    right() {
+      if (this.status) {
+        event.preventDefault();
+
+        this.$refs.datePanel.$refs.datepicker.right();
+      }
+      // call child method right()
+    },
+    up() {
+      if (this.status) {
+        event.preventDefault();
+        this.$refs.datePanel.$refs.datepicker.up();
+      }
+    },
+    enterrange(event) {
+      event.preventDefault();
+      if (this.status) {
+        this.$refs.datePanelRange.$refs.datepicker.enter(event);
+      }
+    },
+    downrange() {
+      if (this.status) {
+        event.preventDefault();
+
+        this.$refs.datePanelRange.$refs.datepicker.down();
+      }
+    },
+    leftrange() {
+      if (this.status) {
+        event.preventDefault();
+
+        this.$refs.datePanelRange.$refs.datepicker.left();
+      }
+    },
+    rightrange() {
+      if (this.status) {
+        event.preventDefault();
+
+        this.$refs.datePanelRange.$refs.datepicker.right();
+      }
+      // call child method right()
+    },
+    uprange() {
+      if (this.status) {
+        event.preventDefault();
+
+        this.$refs.datePanelRange.$refs.datepicker.up();
+      }
+    },
+
+    updatePosition() {
+      if (this.$refs.totalWidth && this.$refs.datepicker) {
+        this.$nextTick(() => {
+          //assign value
+
+          this.inputTop = this.$refs.totalWidth.getBoundingClientRect().top;
+          this.poperHeight = this.$refs.datepicker.offsetHeight;
+          this.totalHeight = window.innerHeight;
+
+          this.inputBottom = this.totalHeight - this.inputTop;
+
+          // poper up
+          // 上方够下方不够 定位在上方
+          if (
+            this.poperHeight > this.inputBottom &&
+            this.poperHeight < this.inputTop
+          ) {
+            this.position = this.inputTop - this.poperHeight;
+          }
+          //上下均不够 定位在底部 bottom 0
+          if (
+            this.poperHeight > this.inputBottom &&
+            this.poperHeight > this.inputTop
+          ) {
+            this.position = this.totalHeight - this.poperHeight;
+          }
+          //只要下方空间够 定位在input下方
+          if (this.poperHeight < this.inputBottom) {
+            this.position = this.inputTop + this.inputHeight;
+          }
+        });
+      }
     },
     //点击选项时阻止input的blur事件
     dateMousedown: function(event) {
@@ -206,25 +330,26 @@ export default {
     },
     firstconfirm(str) {
       this.pickerValue = str;
-      this.$emit("input", [str]);
+      // if this.secondPickerValue else null
+
       this.$refs.datePanel.status = null;
       if (this.daterange) {
+        this.$emit("input", [str, this.secondPickerValue || null]);
         this.$refs.datePanel.status = "year";
       } else {
+        this.$emit("input", str);
         this.status = false;
+        this.$refs.input.blur();
       }
     },
     secondconfirm(str) {
       //if second value exits delete
-      if (this.pickerValue.indexOf("--") > -1) {
-        this.pickerValue = this.pickerValue.split("--")[0];
-      }
-      this.pickerValue = this.pickerValue + "--" + str;
-      // console.log(this.pickerValue);
-      // emit array
-      this.$emit("input", this.pickerValue.split("--"));
+      this.secondPickerValue = str;
+      this.$emit("input", [this.pickerValue || null, str]);
       this.$refs.datePanel.status = this.$refs.datePanelRange.status = null;
       this.status = false;
+      this.$refs.inputRange.blur();
+      this.$refs.input.blur();
     },
     showTime() {
       this.status = !this.status;

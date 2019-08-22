@@ -15,11 +15,9 @@
 import Listview from "~/components/parts/Listview.vue";
 import axios from "axios";
 import config from "../common/api";
-import baseBtn from "@/components/parts/baseBtn";
 export default {
   components: {
-    Listview,
-    baseBtn
+    Listview
   },
   methods: {
     handelDel(event) {
@@ -33,16 +31,14 @@ export default {
     }
   },
   beforeCreate() {
-    //获取菜单列表
     axios({
       method: "get",
-      url: "http://" + config.host + "/Cargoorbs/API/admin/menu/listLinear",
+      url: "http://" + config.host + "/Cargoorbs/API/admin/department/list",
       headers: { Authorization: "cb401ee5-2b5a-4c44-996d-71679e77cfdd" }
     }).then(res => {
-      console.log("所有菜单", res);
+      console.log("部门组织结构树返回数据", res);
       if (res.data.status === 1) {
         // console.log("返回数据成功");
-        console.log("菜单", res.data.data);
         this.json[0] = res.data.data;
         if (this.refresh && this.refresh < 10) {
           this.refresh++;

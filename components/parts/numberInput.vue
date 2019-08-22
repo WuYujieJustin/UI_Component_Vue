@@ -182,9 +182,6 @@ NumeralFormatter.prototype = {
 };
 
 export default {
-  created() {
-    // console.log("pre?????????????" + this.precision);
-  },
   data() {
     return {
       spanwidth: 0,
@@ -202,7 +199,7 @@ export default {
     },
     // set for v-model
     value: {
-      type: [Array,Object]
+      type: [Array, Object, Number]
     },
     // 单位
     icon: {
@@ -258,12 +255,12 @@ export default {
       var dom = this.$refs.ispan;
       let totalWidth = this.$refs.totalWidth.offsetWidth;
       this.spanwidth = dom.offsetWidth;
-      // 固定宽度 400px-50px=350px
+      // 固定宽度 400px-50px=350px 400px为totalwidth
       this.width = (totalWidth - 50 - this.spanwidth) / 2 + "px";
       if (this.numberrange) {
         this.$refs.input.style.width = this.width;
-      }else{
-        this.$refs.input.style.width = totalWidth - this.spanwidth +"px"
+      } else {
+        this.$refs.input.style.width = totalWidth - this.spanwidth + "px";
       }
     }
     this.tempvalue = this.value;
@@ -283,7 +280,11 @@ export default {
   },
   computed: {
     firstValue() {
-      return this.value[0];
+      if (this.numberrange) {
+        return this.value[0];
+      } else {
+        return this.value;
+      }
     },
     secondValue() {
       if (this.numberrange) {
@@ -450,10 +451,10 @@ export default {
                 ]);
               } else {
                 // if numberrange emit two null
-                if(vm.numberrange){
-                  vm.$emit("input", [null, null])
-                }else{
-                  vm.$emit("input",[null])
+                if (vm.numberrange) {
+                  vm.$emit("input", [null, null]);
+                } else {
+                  vm.$emit("input", null);
                 }
               }
               vm.tempvalue = [];
@@ -498,23 +499,27 @@ export default {
             }
             // 删除最后一位小数  保留两位小数  抛出的num有三位
             // add toString in case num is number
-            if (
-              num.toString().indexOf(".") > 0 &&
-              num
-                .toString()
-                .split(".")[1]
-                .toString().length === 3
-            ) {
-              num = Number(num.substring(0, num.toString().length - 1));
-            }
-            if (num.toString().indexOf(".") === num.length - 1) {
-              // num = Number(num)+"."
-            } else {
-              num = Number(num);
+            // 如果组件为传值 num !==null
+            if (num !== null) {
+              if (
+                num.toString().indexOf(".") > 0 &&
+                num
+                  .toString()
+                  .split(".")[1]
+                  .toString().length === 3
+              ) {
+                num = Number(num.substring(0, num.toString().length - 1));
+              }
+              if (num.toString().indexOf(".") === num.length - 1) {
+                // num = Number(num)+"."
+              } else {
+                num = Number(num);
+              }
             }
 
             if (!vm.numberrange) {
-              vm.$emit("input", [num]);
+              vm.$emit("input", num);
+              // console.log(num+"num")
             } else {
               // if numberrange emit the origal secondtext
               if (vm.secondText) {
